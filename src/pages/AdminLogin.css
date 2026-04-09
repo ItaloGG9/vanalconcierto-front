@@ -1,0 +1,82 @@
+.alog {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 24px;
+}
+
+.alog__bg { position: absolute; inset: 0; z-index: 0; }
+.alog__gradient {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(245,197,24,0.1) 0%, transparent 60%), var(--bg);
+}
+.alog__grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.alog__card {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+}
+
+.alog__logo { font-size: 48px; margin-bottom: 4px; }
+.alog__title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 0.04em;
+}
+.alog__sub { font-size: 14px; color: var(--text-3); margin-bottom: 8px; font-family: var(--font-mono); }
+
+.alog__form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.alog__field { display: flex; flex-direction: column; gap: 6px; }
+.alog__field label { font-size: 13px; color: var(--text-2); font-weight: 500; }
+.alog__field input { width: 100%; }
+
+.alog__btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+.alog__btn:hover:not(:disabled) {
+  background: #e6b800;
+  box-shadow: 0 8px 24px rgba(245,197,24,0.3);
+}
+.alog__btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.alog__back {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-3);
+  transition: color 0.2s;
+}
+.alog__back:hover { color: var(--text-2); }
