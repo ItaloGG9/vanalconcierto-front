@@ -89,12 +89,13 @@
 .hero__title-accent {
   color: var(--accent);
   position: relative;
+  display: inline-block;
 }
 .hero__title-accent::after {
   content: '';
   position: absolute;
-  bottom: 4px; left: 0; right: 0;
-  height: 3px;
+  bottom: 8px; left: 0; right: 0;
+  height: 2px;
   background: var(--accent);
   transform: scaleX(0);
   transform-origin: left;

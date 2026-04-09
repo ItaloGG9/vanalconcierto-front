@@ -56,7 +56,7 @@ function ContactSection() {
           </div>
           <div className="contact__links">
             <a
-              href="https://wa.me/56900000000"
+              href="https://wa.me/56948459805"
               target="_blank"
               rel="noreferrer"
               className="contact__btn contact__btn--wa"
