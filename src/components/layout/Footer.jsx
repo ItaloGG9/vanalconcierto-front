@@ -9,7 +9,7 @@ export default function Footer() {
           <p>Tu van al concierto más cercano.</p>
         </div>
         <div className="footer__copy">
-          © {new Date().getFullYear()} VanAlConcierto. Todos los derechos reservados.
+          © {new Date().getFullYear()} VanAlConcierto. Todos los derechos reservados. | <a href="/privacy">Política de Privacidad</a> | <a href="/terms">Términos de Servicio</a>
         </div>
       </div>
     </footer>
