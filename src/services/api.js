@@ -18,7 +18,10 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('vac_token')
-      window.location.href = '/admin/login'
+      // Solo redirigir si NO estamos ya en la página de login
+      if (!window.location.pathname.includes('/admin/login')) {
+        window.location.href = '/admin/login'
+      }
     }
     return Promise.reject(err)
   }

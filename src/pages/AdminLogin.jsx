@@ -10,7 +10,7 @@ export default function AdminLogin() {
   const { login, isLoading } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  /*const handleSubmit = async (e) => {
     e.preventDefault()
     const result = await login(email, password)
     if (result.success) {
@@ -19,7 +19,23 @@ export default function AdminLogin() {
     } else {
       toast.error(result.error)
     }
+  }*/
+
+  const handleSubmit = async (e) => {
+  e.preventDefault()
+  console.log("Intentando login con:", email) // DEBUG
+  
+  const result = await login(email, password)
+  
+  if (result.success) {
+    toast.success('Bienvenido')
+    navigate('/admin')
+  } else {
+    // Esto te dirá el error real en la consola sin que se borre
+    console.error("Error de login:", result.error) 
+    toast.error(result.error || 'Credenciales inválidas')
   }
+}
 
   return (
     <div className="alog">
