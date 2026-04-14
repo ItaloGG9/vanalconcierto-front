@@ -309,7 +309,7 @@ function EventsTab() {
 function DriversTab() {
   const [drivers, setDrivers] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[] })
+  const [form, setForm] = useState({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[],password: '' })
   const [saving, setSaving] = useState(false)
 
   const DAYS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo']
@@ -377,6 +377,15 @@ function DriversTab() {
               <label>Email *</label>
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="chofer@email.com" />
             </div>
+            <div className="adm-field">
+  <label>Contraseña para el chofer</label>
+  <input
+    type="password"
+    value={form.password || ''}
+    onChange={e => setForm({...form, password: e.target.value})}
+    placeholder="Mínimo 8 caracteres"
+  />
+</div>
             <div className="adm-field">
               <label>Teléfono</label>
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+56912345678" />
