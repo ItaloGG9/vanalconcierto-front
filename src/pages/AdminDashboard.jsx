@@ -105,7 +105,7 @@ function BookingsTab() {
                   </td>
                   <td><StatusBadge status={b.payment_status} /></td>
                   <td>
-                    {b.payment_status === 'reserved' && (
+                    {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
                       <div className="adm-actions">
                         <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
                           <Check size={14} />
