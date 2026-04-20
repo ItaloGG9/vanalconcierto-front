@@ -4,10 +4,10 @@ import {
   adminGetBookings, adminConfirmTransfer,
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, getEvents
+  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown } from 'lucide-react'
+import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'
 import './AdminDashboard.css'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -31,6 +31,108 @@ function StatusBadge({ status }) {
     <span className="status-badge" style={{ '--sc': s.color }}>
       {s.label}
     </span>
+  )
+}
+
+// ── ASSIGN DRIVER MODAL ───────────────────────────────────────────────────────
+function AssignDriverModal({ event, onClose, onAssigned }) {
+  const [drivers, setDrivers] = useState([])
+  const [assignedDrivers, setAssignedDrivers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      adminGetDrivers(),
+      adminGetEventDrivers(event.id)
+    ]).then(([driversRes, assignedRes]) => {
+      setDrivers(driversRes.data)
+      setAssignedDrivers(assignedRes.data.map(d => d.driver_id))
+    }).catch(() => {
+      toast.error('Error cargando choferes')
+    }).finally(() => {
+      setLoading(false)
+    })
+  }, [event.id])
+
+  const handleAssign = async (driverId) => {
+    try {
+      await adminAssignDriver(event.id, driverId)
+      setAssignedDrivers([...assignedDrivers, driverId])
+      toast.success('Chofer asignado ✅')
+      onAssigned()
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error asignando chofer')
+    }
+  }
+
+  const handleUnassign = async (driverId) => {
+    try {
+      await adminUnassignDriver(event.id, driverId)
+      setAssignedDrivers(assignedDrivers.filter(id => id !== driverId))
+      toast.success('Chofer desasignado')
+      onAssigned()
+    } catch (e) {
+      toast.error('Error desasignando chofer')
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card">
+        <div className="modal-header">
+          <h3>Asignar choferes</h3>
+          <p className="modal-subtitle">{event.title}</p>
+          <button className="modal-close" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
+              Cargando choferes...
+            </div>
+          ) : drivers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
+              No hay choferes registrados
+            </div>
+          ) : (
+            <div className="drivers-assign-list">
+              {drivers.map(driver => {
+                const isAssigned = assignedDrivers.includes(driver.id)
+                return (
+                  <div key={driver.id} className="driver-assign-item">
+                    <div className="driver-assign-avatar">
+                      {driver.avatar_url ? (
+                        <img src={driver.avatar_url} alt={driver.full_name} />
+                      ) : (
+                        <span>🧑‍✈️</span>
+                      )}
+                    </div>
+                    <div className="driver-assign-info">
+                      <div className="adm-cell-main">{driver.full_name}</div>
+                      <div className="adm-cell-sub">
+                        🚐 {driver.van_plate} · {driver.van_capacity} pasajeros
+                      </div>
+                    </div>
+                    <button
+                      className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`}
+                      onClick={() => isAssigned ? handleUnassign(driver.id) : handleAssign(driver.id)}
+                    >
+                      {isAssigned ? (
+                        <><X size={14} /> Quitar</>
+                      ) : (
+                        <><Check size={14} /> Asignar</>
+                      )}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -137,8 +239,23 @@ function EventsTab() {
   })
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [assigningEvent, setAssigningEvent] = useState(null)
+  const [eventDrivers, setEventDrivers] = useState({})
 
-  const load = () => getEvents(false).then(r => setEvents(r.data)).catch(() => {})
+  const load = () => {
+    getEvents(false).then(r => {
+      setEvents(r.data)
+      // Cargar choferes asignados para cada evento
+      r.data.forEach(event => {
+        adminGetEventDrivers(event.id).then(res => {
+          setEventDrivers(prev => ({
+            ...prev,
+            [event.id]: res.data
+          }))
+        }).catch(() => {})
+      })
+    }).catch(() => {})
+  }
 
   useEffect(() => { load() }, [])
 
@@ -187,7 +304,6 @@ function EventsTab() {
         eventId = res.data.id
         toast.success('Evento creado')
       }
-      // Subir imagen si hay
       if (imageFile && eventId) {
         await adminUploadEventImage(eventId, imageFile)
         toast.success('Imagen subida')
@@ -215,7 +331,6 @@ function EventsTab() {
         </button>
       </div>
 
-      {/* Form */}
       {showForm && (
         <div className="adm-form-card">
           <h3>{editing ? 'Editar evento' : 'Nuevo evento'}</h3>
@@ -272,35 +387,58 @@ function EventsTab() {
         </div>
       )}
 
-      {/* Lista */}
       <div className="adm-events-list">
-        {events.map(ev => (
-          <div key={ev.id} className="adm-event-row">
-            <div className="adm-event-img">
-              {ev.image_url
-                ? <img src={ev.image_url} alt={ev.title} />
-                : <span>🎵</span>
-              }
-            </div>
-            <div className="adm-event-info">
-              <div className="adm-cell-main">{ev.title}</div>
-              <div className="adm-cell-sub">
-                {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {ev.stock} cupos
+        {events.map(ev => {
+          const drivers = eventDrivers[ev.id] || []
+          return (
+            <div key={ev.id} className="adm-event-row">
+              <div className="adm-event-img">
+                {ev.image_url
+                  ? <img src={ev.image_url} alt={ev.title} />
+                  : <span>🎵</span>
+                }
+              </div>
+              <div className="adm-event-info">
+                <div className="adm-cell-main">{ev.title}</div>
+                <div className="adm-cell-sub">
+                  {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {ev.stock} cupos
+                </div>
+                {drivers.length > 0 && (
+                  <div className="adm-event-drivers">
+                    <Users size={12} />
+                    {drivers.map(d => d.users?.full_name).join(', ')}
+                  </div>
+                )}
+              </div>
+              <div className="adm-event-status">
+                {ev.is_active
+                  ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span>
+                  : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>
+                }
+              </div>
+              <div className="adm-actions">
+                <button 
+                  className="adm-btn adm-btn--primary" 
+                  onClick={() => setAssigningEvent(ev)}
+                  title="Asignar choferes"
+                >
+                  <UserPlus size={14} />
+                </button>
+                <button className="adm-btn adm-btn--ghost" onClick={() => openEdit(ev)}>Editar</button>
+                <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
               </div>
             </div>
-            <div className="adm-event-status">
-              {ev.is_active
-                ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span>
-                : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>
-              }
-            </div>
-            <div className="adm-actions">
-              <button className="adm-btn adm-btn--ghost" onClick={() => openEdit(ev)}>Editar</button>
-              <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      {assigningEvent && (
+        <AssignDriverModal
+          event={assigningEvent}
+          onClose={() => setAssigningEvent(null)}
+          onAssigned={() => load()}
+        />
+      )}
     </div>
   )
 }
@@ -378,14 +516,14 @@ function DriversTab() {
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="chofer@email.com" />
             </div>
             <div className="adm-field">
-  <label>Contraseña para el chofer</label>
-  <input
-    type="password"
-    value={form.password || ''}
-    onChange={e => setForm({...form, password: e.target.value})}
-    placeholder="Mínimo 8 caracteres"
-  />
-</div>
+              <label>Contraseña para el chofer</label>
+              <input
+                type="password"
+                value={form.password || ''}
+                onChange={e => setForm({...form, password: e.target.value})}
+                placeholder="Mínimo 8 caracteres"
+              />
+            </div>
             <div className="adm-field">
               <label>Teléfono</label>
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+56912345678" />
@@ -464,7 +602,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="adm">
-      {/* Sidebar */}
       <aside className="adm-sidebar">
         <div className="adm-sidebar__logo">
           <span>🚐</span>
@@ -494,7 +631,6 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Contenido */}
       <main className="adm-main">
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'events'   && <EventsTab />}

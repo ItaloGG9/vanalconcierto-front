@@ -18,7 +18,6 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('vac_token')
-      // Solo redirigir si NO estamos ya en la página de login
       if (!window.location.pathname.includes('/admin/login')) {
         window.location.href = '/admin/login'
       }
@@ -53,6 +52,10 @@ export const adminGetDrivers = () => api.get('/drivers/')
 export const adminCreateDriver = (data) => api.post('/drivers/', data)
 export const adminVerifyDriver = (id) => api.put(`/drivers/${id}/verify`)
 export const adminDeleteDriver = (id) => api.delete(`/drivers/${id}`)
+
+// ── Asignación de choferes a eventos ───────────────────────
 export const adminAssignDriver = (eventId, driverId) => api.post(`/events/${eventId}/assign-driver/${driverId}`)
+export const adminUnassignDriver = (eventId, driverId) => api.delete(`/events/${eventId}/assign-driver/${driverId}`)
+export const adminGetEventDrivers = (eventId) => api.get(`/events/${eventId}/drivers`)
 
 export default api
