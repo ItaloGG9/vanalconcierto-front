@@ -90,3 +90,42 @@
   .navbar__links--open { transform: translateX(0); }
   .navbar__links a { font-size: 20px !important; }
 }
+
+/* Agrega/actualiza estos estilos en src/components/layout/Navbar.css */
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.navbar__logo:hover {
+  opacity: 0.8;
+}
+
+.navbar__logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.navbar__logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar__logo-img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .navbar__logo-text {
+    font-size: 16px;
+  }
+}
