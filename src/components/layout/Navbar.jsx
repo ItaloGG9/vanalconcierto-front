@@ -1,71 +1,45 @@
-// src/components/layout/Navbar.jsx - Frontend público
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import './Navbar.css'
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
 
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-      setMobileMenuOpen(false)
-    }
-  }
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => setOpen(false), [location])
 
   return (
-    <nav className="navbar">
-      <div className="navbar__container">
-        {/* Logo */}
-        <a href="/" className="navbar__logo">
-          <img src="/logo.svg" alt="VanAlConcierto" className="navbar__logo-img" />
-          <span className="navbar__logo-text">VANALCONCIERTO</span>
-        </a>
+    <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+      <div className="container navbar__inner">
+        <Link to="/" className="navbar__logo">
+          <span className="navbar__logo-icon"></span>
+          <span className="navbar__logo-text">VanAlConcierto</span>
+        </Link>
 
-        {/* Desktop Menu */}
-        <div className="navbar__menu">
-          <button onClick={() => scrollToSection('eventos')} className="navbar__link">
-            Eventos
-          </button>
-          <button onClick={() => scrollToSection('como-funciona')} className="navbar__link">
-            ¿Cómo funciona?
-          </button>
-          <button onClick={() => scrollToSection('contacto')} className="navbar__link">
-            Contacto
-          </button>
-          <a href="https://vanalconcierto-front.vercel.app/admin" className="navbar__admin">
-            ADMIN
-          </a>
-        </div>
+        <ul className={`navbar__links ${open ? 'navbar__links--open' : ''}`}>
+          <li><a href="#eventos" onClick={() => setOpen(false)}>Eventos</a></li>
+          <li><a href="#como-funciona" onClick={() => setOpen(false)}>¿Cómo funciona?</a></li>
+          <li><a href="#contacto" onClick={() => setOpen(false)}>Contacto</a></li>
+          <li>
+            <Link to="/admin/login" className="navbar__cta">
+              Admin
+            </Link>
+          </li>
+        </ul>
 
-        {/* Mobile Menu Button */}
-        <button 
-          className="navbar__mobile-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        <button className="navbar__hamburger" onClick={() => setOpen(!open)} aria-label="Menu">
+          {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="navbar__mobile-menu">
-          <button onClick={() => scrollToSection('eventos')} className="navbar__mobile-link">
-            Eventos
-          </button>
-          <button onClick={() => scrollToSection('como-funciona')} className="navbar__mobile-link">
-            ¿Cómo funciona?
-          </button>
-          <button onClick={() => scrollToSection('contacto')} className="navbar__mobile-link">
-            Contacto
-          </button>
-          <a href="https://vanalconcierto-front.vercel.app/admin" className="navbar__mobile-admin">
-            ADMIN
-          </a>
-        </div>
-      )}
     </nav>
   )
 }
+
