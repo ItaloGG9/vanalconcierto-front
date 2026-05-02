@@ -16,7 +16,7 @@ export default function EventPanel({ event, onClose }) {
 
   const [form, setForm] = useState({ name: '', email: '', phone: '' })
 
-  const available = event.available_stock ?? (event.stock - event.stock_reserved)
+  const available = event.available_capacity
   const hasOffer = event.original_price && event.original_price > event.price
   const discount = hasOffer ? Math.round((1 - event.price / event.original_price) * 100) : null
   const total = Number(event.price) * qty

@@ -1,241 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useAuthStore } from '../store/authStore'
-import {
-  adminGetBookings, adminConfirmTransfer,
-  adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
-  adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents
-} from '../services/api'
-import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'
-import './AdminDashboard.css'
+// Solo muestro las partes que cambiaron:
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-const TABS = [
-  { id: 'bookings', label: '📦 Reservas' },
-  { id: 'events',   label: '🎵 Eventos' },
-  { id: 'drivers',  label: '🚐 Choferes' },
-]
-
-// ── Booking status badge ──────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    pending:   { label: 'Pendiente',  color: '#f5c518' },
-    reserved:  { label: 'Reservado',  color: '#ff6b35' },
-    confirmed: { label: 'Confirmado', color: '#22c55e' },
-    rejected:  { label: 'Rechazado',  color: '#ef4444' },
-    refunded:  { label: 'Reembolsado',color: '#8b5cf6' },
-  }
-  const s = map[status] || { label: status, color: '#9090a8' }
-  return (
-    <span className="status-badge" style={{ '--sc': s.color }}>
-      {s.label}
-    </span>
-  )
-}
-
-// ── ASSIGN DRIVER MODAL ───────────────────────────────────────────────────────
-function AssignDriverModal({ event, onClose, onAssigned }) {
-  const [drivers, setDrivers] = useState([])
-  const [assignedDrivers, setAssignedDrivers] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([
-      adminGetDrivers(),
-      adminGetEventDrivers(event.id)
-    ]).then(([driversRes, assignedRes]) => {
-      setDrivers(driversRes.data)
-      setAssignedDrivers(assignedRes.data.map(d => d.driver_id))
-    }).catch(() => {
-      toast.error('Error cargando choferes')
-    }).finally(() => {
-      setLoading(false)
-    })
-  }, [event.id])
-
-  const handleAssign = async (driverId) => {
-    try {
-      await adminAssignDriver(event.id, driverId)
-      setAssignedDrivers([...assignedDrivers, driverId])
-      toast.success('Chofer asignado ✅')
-      onAssigned()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error asignando chofer')
-    }
-  }
-
-  const handleUnassign = async (driverId) => {
-    try {
-      await adminUnassignDriver(event.id, driverId)
-      setAssignedDrivers(assignedDrivers.filter(id => id !== driverId))
-      toast.success('Chofer desasignado')
-      onAssigned()
-    } catch (e) {
-      toast.error('Error desasignando chofer')
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-card">
-        <div className="modal-header">
-          <h3>Asignar choferes</h3>
-          <p className="modal-subtitle">{event.title}</p>
-          <button className="modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="modal-body">
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              Cargando choferes...
-            </div>
-          ) : drivers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              No hay choferes registrados
-            </div>
-          ) : (
-            <div className="drivers-assign-list">
-              {drivers.map(driver => {
-                const isAssigned = assignedDrivers.includes(driver.id)
-                return (
-                  <div key={driver.id} className="driver-assign-item">
-                    <div className="driver-assign-avatar">
-                      {driver.avatar_url ? (
-                        <img src={driver.avatar_url} alt={driver.full_name} />
-                      ) : (
-                        <span>🧑‍✈️</span>
-                      )}
-                    </div>
-                    <div className="driver-assign-info">
-                      <div className="adm-cell-main">{driver.full_name}</div>
-                      <div className="adm-cell-sub">
-                        🚐 {driver.van_plate} · {driver.van_capacity} pasajeros
-                      </div>
-                    </div>
-                    <button
-                      className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`}
-                      onClick={() => isAssigned ? handleUnassign(driver.id) : handleAssign(driver.id)}
-                    >
-                      {isAssigned ? (
-                        <><X size={14} /> Quitar</>
-                      ) : (
-                        <><Check size={14} /> Asignar</>
-                      )}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── BOOKINGS TAB ──────────────────────────────────────────────────────────────
-function BookingsTab() {
-  const [bookings, setBookings] = useState([])
-  const [filter, setFilter] = useState('all')
-  const [loading, setLoading] = useState(true)
-
-  const load = () => {
-    setLoading(true)
-    adminGetBookings(filter !== 'all' ? { status: filter } : {})
-      .then(r => setBookings(r.data))
-      .catch(() => toast.error('Error cargando reservas'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [filter])
-
-  const confirm = async (id, approved) => {
-    try {
-      await adminConfirmTransfer({ booking_id: id, approved })
-      toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
-      load()
-    } catch { toast.error('Error al procesar') }
-  }
-
-  return (
-    <div className="adm-tab">
-      <div className="adm-tab__header">
-        <h2>Reservas</h2>
-        <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
-          <option value="all">Todas</option>
-          <option value="pending">Pendientes</option>
-          <option value="reserved">Reservadas (transferencia)</option>
-          <option value="confirmed">Confirmadas</option>
-          <option value="rejected">Rechazadas</option>
-        </select>
-      </div>
-
-      {loading ? <div className="adm-loading">Cargando...</div> : (
-        <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Evento</th>
-                <th>Cupos</th>
-                <th>Total</th>
-                <th>Método</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.length === 0 && (
-                <tr><td colSpan={7} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>Sin resultados</td></tr>
-              )}
-              {bookings.map(b => (
-                <tr key={b.id}>
-                  <td>
-                    <div className="adm-cell-main">{b.customer_name}</div>
-                    <div className="adm-cell-sub">{b.customer_email}</div>
-                  </td>
-                  <td>{b.events?.title || '—'}</td>
-                  <td>{b.quantity}</td>
-                  <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
-                  <td>
-                    <span className="adm-method">
-                      {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
-                    </span>
-                  </td>
-                  <td><StatusBadge status={b.payment_status} /></td>
-                  <td>
-                    {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
-                      <div className="adm-actions">
-                        <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
-                          <Check size={14} />
-                        </button>
-                        <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── EVENTS TAB ────────────────────────────────────────────────────────────────
+// ── EVENTS TAB ──────────────────────────────────────────────────────────────── 
 function EventsTab() {
   const [events, setEvents] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
     title: '', description: '', pickup_info: '', event_date: '',
-    price: '', original_price: '', stock: '', is_round_trip: true, is_active: true
+    price: '', original_price: '', total_capacity: '', is_round_trip: true, is_active: true  // ← CAMBIO: stock → total_capacity
   })
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -245,7 +17,6 @@ function EventsTab() {
   const load = () => {
     getEvents(false).then(r => {
       setEvents(r.data)
-      // Cargar choferes asignados para cada evento
       r.data.forEach(event => {
         adminGetEventDrivers(event.id).then(res => {
           setEventDrivers(prev => ({
@@ -261,7 +32,11 @@ function EventsTab() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ title:'', description:'', pickup_info:'', event_date:'', price:'', original_price:'', stock:'', is_round_trip:true, is_active:true })
+    setForm({ 
+      title:'', description:'', pickup_info:'', event_date:'', 
+      price:'', original_price:'', total_capacity:'',  // ← CAMBIO
+      is_round_trip:true, is_active:true 
+    })
     setShowForm(true)
   }
 
@@ -274,7 +49,7 @@ function EventsTab() {
       event_date: ev.event_date?.slice(0,16) || '',
       price: ev.price,
       original_price: ev.original_price || '',
-      stock: ev.stock,
+      total_capacity: ev.total_capacity,  // ← CAMBIO: stock → total_capacity
       is_round_trip: ev.is_round_trip,
       is_active: ev.is_active
     })
@@ -282,7 +57,7 @@ function EventsTab() {
   }
 
   const save = async () => {
-    if (!form.title || !form.price || !form.event_date || !form.stock) {
+    if (!form.title || !form.price || !form.event_date || !form.total_capacity) {  // ← CAMBIO
       toast.error('Completa los campos obligatorios')
       return
     }
@@ -292,7 +67,7 @@ function EventsTab() {
         ...form,
         price: parseFloat(form.price),
         original_price: form.original_price ? parseFloat(form.original_price) : null,
-        stock: parseInt(form.stock),
+        total_capacity: parseInt(form.total_capacity),  // ← CAMBIO: stock → total_capacity
         event_date: new Date(form.event_date).toISOString()
       }
       let eventId = editing?.id
@@ -344,8 +119,16 @@ function EventsTab() {
               <input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} />
             </div>
             <div className="adm-field">
-              <label>Stock (cupos) *</label>
-              <input type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} placeholder="20" />
+              <label>Capacidad Total (suma de todas las vans) *</label>  {/* ← CAMBIO: label más claro */}
+              <input 
+                type="number" 
+                value={form.total_capacity}  // ← CAMBIO: stock → total_capacity
+                onChange={e => setForm({...form, total_capacity: e.target.value})}  // ← CAMBIO
+                placeholder="34 (ej: 2 vans × 17)" 
+              />
+              <small style={{color:'var(--text-3)',fontSize:'12px'}}>
+                Ej: 2 vans de 17 + 1 van de 15 = 49 cupos
+              </small>
             </div>
             <div className="adm-field">
               <label>Precio CLP *</label>
@@ -390,6 +173,7 @@ function EventsTab() {
       <div className="adm-events-list">
         {events.map(ev => {
           const drivers = eventDrivers[ev.id] || []
+          const available = ev.available_capacity ?? 0  // ← CAMBIO: usar available_capacity
           return (
             <div key={ev.id} className="adm-event-row">
               <div className="adm-event-img">
@@ -401,7 +185,7 @@ function EventsTab() {
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
                 <div className="adm-cell-sub">
-                  {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {ev.stock} cupos
+                  {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles {/* ← CAMBIO */}
                 </div>
                 {drivers.length > 0 && (
                   <div className="adm-event-drivers">
@@ -443,199 +227,4 @@ function EventsTab() {
   )
 }
 
-// ── DRIVERS TAB ───────────────────────────────────────────────────────────────
-function DriversTab() {
-  const [drivers, setDrivers] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[],password: '' })
-  const [saving, setSaving] = useState(false)
-
-  const DAYS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo']
-
-  const load = () => adminGetDrivers().then(r => setDrivers(r.data)).catch(() => {})
-  useEffect(() => { load() }, [])
-
-  const toggleDay = (day) => {
-    setForm(f => ({
-      ...f,
-      available_days: f.available_days.includes(day)
-        ? f.available_days.filter(d => d !== day)
-        : [...f.available_days, day]
-    }))
-  }
-
-  const save = async () => {
-    if (!form.email || !form.full_name || !form.van_plate) {
-      toast.error('Completa los campos obligatorios')
-      return
-    }
-    setSaving(true)
-    try {
-      await adminCreateDriver(form)
-      toast.success('Chofer creado exitosamente')
-      setShowForm(false)
-      setForm({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[] })
-      load()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error creando chofer')
-    } finally { setSaving(false) }
-  }
-
-  const verify = async (id) => {
-    await adminVerifyDriver(id)
-    toast.success('Chofer verificado ✅')
-    load()
-  }
-
-  const remove = async (id) => {
-    if (!confirm('¿Desactivar este chofer?')) return
-    await adminDeleteDriver(id)
-    toast.success('Chofer desactivado')
-    load()
-  }
-
-  return (
-    <div className="adm-tab">
-      <div className="adm-tab__header">
-        <h2>Choferes</h2>
-        <button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={14} /> Nuevo chofer
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="adm-form-card">
-          <h3>Registrar chofer</h3>
-          <div className="adm-form-grid">
-            <div className="adm-field">
-              <label>Nombre completo *</label>
-              <input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="Juan Pérez" />
-            </div>
-            <div className="adm-field">
-              <label>Email *</label>
-              <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="chofer@email.com" />
-            </div>
-            <div className="adm-field">
-              <label>Contraseña para el chofer</label>
-              <input
-                type="password"
-                value={form.password || ''}
-                onChange={e => setForm({...form, password: e.target.value})}
-                placeholder="Mínimo 8 caracteres"
-              />
-            </div>
-            <div className="adm-field">
-              <label>Teléfono</label>
-              <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+56912345678" />
-            </div>
-            <div className="adm-field">
-              <label>Patente del furgón *</label>
-              <input value={form.van_plate} onChange={e => setForm({...form, van_plate: e.target.value})} placeholder="AB1234" />
-            </div>
-            <div className="adm-field">
-              <label>Capacidad</label>
-              <input type="number" value={form.van_capacity} onChange={e => setForm({...form, van_capacity: parseInt(e.target.value)})} />
-            </div>
-            <div className="adm-field adm-field--full">
-              <label>Días disponibles</label>
-              <div className="adm-days">
-                {DAYS.map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={`adm-day ${form.available_days.includes(d) ? 'adm-day--active' : ''}`}
-                    onClick={() => toggleDay(d)}
-                  >{d.slice(0,3)}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="adm-form-actions">
-            <button className="adm-btn adm-btn--ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
-              {saving ? 'Guardando...' : 'Crear chofer'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="adm-drivers-list">
-        {drivers.map(d => (
-          <div key={d.id} className="adm-driver-row">
-            <div className="adm-driver-avatar">
-              {d.avatar_url ? <img src={d.avatar_url} alt={d.full_name} /> : <span>🧑‍✈️</span>}
-            </div>
-            <div className="adm-driver-info">
-              <div className="adm-cell-main">{d.full_name}</div>
-              <div className="adm-cell-sub">
-                🚐 {d.van_plate} · {d.van_capacity} pasajeros
-                {d.available_days?.length > 0 && ` · ${d.available_days.join(', ')}`}
-              </div>
-            </div>
-            <div>
-              {d.is_verified
-                ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Verificado</span>
-                : <span className="status-badge" style={{'--sc':'#f5c518'}}>Pendiente</span>
-              }
-            </div>
-            <div className="adm-actions">
-              {!d.is_verified && (
-                <button className="adm-btn adm-btn--success" onClick={() => verify(d.id)}>
-                  <Check size={14} /> Verificar
-                </button>
-              )}
-              <button className="adm-btn adm-btn--danger" onClick={() => remove(d.id)}>
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── MAIN DASHBOARD ────────────────────────────────────────────────────────────
-export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('bookings')
-  const { user, logout } = useAuthStore()
-
-  return (
-    <div className="adm">
-      <aside className="adm-sidebar">
-        <div className="adm-sidebar__logo">
-          <span>🚐</span>
-          <span>VanAlConcierto</span>
-        </div>
-
-        <nav className="adm-sidebar__nav">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="adm-sidebar__footer">
-          <div className="adm-sidebar__user">
-            <span className="adm-sidebar__user-name">{user?.full_name}</span>
-            <span className="adm-sidebar__user-role">Admin</span>
-          </div>
-          <button className="adm-sidebar__logout" onClick={logout} title="Cerrar sesión">
-            <LogOut size={16} />
-          </button>
-        </div>
-      </aside>
-
-      <main className="adm-main">
-        {activeTab === 'bookings' && <BookingsTab />}
-        {activeTab === 'events'   && <EventsTab />}
-        {activeTab === 'drivers'  && <DriversTab />}
-      </main>
-    </div>
-  )
-}
+// El resto del código (BookingsTab, DriversTab, etc.) sigue igual

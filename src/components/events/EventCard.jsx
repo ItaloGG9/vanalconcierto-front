@@ -4,7 +4,7 @@ import { Calendar, MapPin, ArrowLeftRight, Users } from 'lucide-react'
 import './EventCard.css'
 
 export default function EventCard({ event, onClick }) {
-  const available = event.available_stock ?? (event.stock - event.stock_reserved)
+  const available = event.available_capacity  // ← CAMBIO: usar el campo calculado automáticamente
   const hasOffer = event.original_price && event.original_price > event.price
   const discount = hasOffer
     ? Math.round((1 - event.price / event.original_price) * 100)
