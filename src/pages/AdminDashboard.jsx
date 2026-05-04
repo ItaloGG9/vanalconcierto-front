@@ -493,12 +493,12 @@ function EventsTab() {
       </div>
 
       {assigningEvent && (
-        <AssignDriverModal
-          event={assigningEvent}
-          onClose={() => setAssigningEvent(null)}
-          onAssigned={() => load()}
-        />
-      )}
+  <AssignVanModal
+    event={assigningEvent}
+    onClose={() => setAssigningEvent(null)}
+    onAssigned={() => load()}
+  />
+)}
     </div>
   )
 }
