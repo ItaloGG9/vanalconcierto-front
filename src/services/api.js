@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://insightful-reprieve-production.up.railway.app/',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 15000,
 })
 
@@ -33,6 +33,7 @@ export const getEvent = (id) => api.get(`/events/${id}`)
 // ── Bookings ─────────────────────────────────────────────────
 export const createMPBooking = (data) => api.post('/bookings/mercadopago', data)
 export const createTransferBooking = (data) => api.post('/bookings/transfer', data)
+export const getPickupPoints = () => api.get('/bookings/pickup-points')  // ← NUEVO
 
 // ── Auth ──────────────────────────────────────────────────────
 export const login = (email, password) => api.post('/auth/login', { email, password })
