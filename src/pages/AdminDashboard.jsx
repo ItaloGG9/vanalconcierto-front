@@ -37,44 +37,45 @@ function StatusBadge({ status }) {
 }
 
 // ── ASSIGN DRIVER MODAL ───────────────────────────────────────────────────────
-function AssignDriverModal({ event, onClose, onAssigned }) {
-  const [drivers, setDrivers] = useState([])
-  const [assignedDrivers, setAssignedDrivers] = useState([])
+// ── ASSIGN VAN MODAL (REEMPLAZAR AssignDriverModal) ──────────────────────────
+function AssignVanModal({ event, onClose, onAssigned }) {
+  const [vans, setVans] = useState([])
+  const [assignedVans, setAssignedVans] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
-      adminGetDrivers(),
-      adminGetEventDrivers(event.id)
-    ]).then(([driversRes, assignedRes]) => {
-      setDrivers(driversRes.data)
-      setAssignedDrivers(assignedRes.data.map(d => d.driver_id))
+      adminGetVans(),
+      adminGetEventVans(event.id)
+    ]).then(([vansRes, assignedRes]) => {
+      setVans(vansRes.data)
+      setAssignedVans(assignedRes.data.map(v => v.id))
     }).catch(() => {
-      toast.error('Error cargando choferes')
+      toast.error('Error cargando vans')
     }).finally(() => {
       setLoading(false)
     })
   }, [event.id])
 
-  const handleAssign = async (driverId) => {
+  const handleAssign = async (vanId) => {
     try {
-      await adminAssignDriver(event.id, driverId)
-      setAssignedDrivers([...assignedDrivers, driverId])
-      toast.success('Chofer asignado ✅')
+      await adminAssignVan(event.id, vanId)
+      setAssignedVans([...assignedVans, vanId])
+      toast.success('Van asignada ✅')
       onAssigned()
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error asignando chofer')
+      toast.error(e.response?.data?.detail || 'Error asignando van')
     }
   }
 
-  const handleUnassign = async (driverId) => {
+  const handleUnassign = async (vanId) => {
     try {
-      await adminUnassignDriver(event.id, driverId)
-      setAssignedDrivers(assignedDrivers.filter(id => id !== driverId))
-      toast.success('Chofer desasignado')
+      await adminUnassignVan(event.id, vanId)
+      setAssignedVans(assignedVans.filter(id => id !== vanId))
+      toast.success('Van desasignada')
       onAssigned()
     } catch (e) {
-      toast.error('Error desasignando chofer')
+      toast.error('Error desasignando van')
     }
   }
 
@@ -82,7 +83,7 @@ function AssignDriverModal({ event, onClose, onAssigned }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-card">
         <div className="modal-header">
-          <h3>Asignar choferes</h3>
+          <h3>Asignar vans al evento</h3>
           <p className="modal-subtitle">{event.title}</p>
           <button className="modal-close" onClick={onClose}>
             <X size={20} />
@@ -92,34 +93,32 @@ function AssignDriverModal({ event, onClose, onAssigned }) {
         <div className="modal-body">
           {loading ? (
             <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              Cargando choferes...
+              Cargando vans...
             </div>
-          ) : drivers.length === 0 ? (
+          ) : vans.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              No hay choferes registrados
+              No hay vans registradas
             </div>
           ) : (
             <div className="drivers-assign-list">
-              {drivers.map(driver => {
-                const isAssigned = assignedDrivers.includes(driver.id)
+              {vans.map(van => {
+                const isAssigned = assignedVans.includes(van.id)
                 return (
-                  <div key={driver.id} className="driver-assign-item">
+                  <div key={van.id} className="driver-assign-item">
                     <div className="driver-assign-avatar">
-                      {driver.avatar_url ? (
-                        <img src={driver.avatar_url} alt={driver.full_name} />
-                      ) : (
-                        <span>🧑‍✈️</span>
-                      )}
+                      <span>🚐</span>
                     </div>
                     <div className="driver-assign-info">
-                      <div className="adm-cell-main">{driver.full_name}</div>
+                      <div className="adm-cell-main">{van.name}</div>
                       <div className="adm-cell-sub">
-                        🚐 {driver.van_plate} · {driver.van_capacity} pasajeros
+                        {van.license_plate && `📋 ${van.license_plate} · `}
+                        {van.capacity} pasajeros
+                        {van.current_driver_name && ` · 🧑‍✈️ ${van.current_driver_name}`}
                       </div>
                     </div>
                     <button
                       className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`}
-                      onClick={() => isAssigned ? handleUnassign(driver.id) : handleAssign(driver.id)}
+                      onClick={() => isAssigned ? handleUnassign(van.id) : handleAssign(van.id)}
                     >
                       {isAssigned ? (
                         <><X size={14} /> Quitar</>
