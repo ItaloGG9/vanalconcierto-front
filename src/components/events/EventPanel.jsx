@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { X, Calendar, MapPin, ArrowLeftRight, Minus, Plus, CreditCard, Building2 } from 'lucide-react'
 import { createMPBooking, createTransferBooking } from '../../services/api'
+import PassengerForm from '../PassengerForm'  // ← NUEVO: Importar PassengerForm
 import toast from 'react-hot-toast'
 import './EventPanel.css'
 
@@ -14,6 +15,9 @@ export default function EventPanel({ event, onClose }) {
   const [notif, setNotif] = useState('email')
   const [transferResult, setTransferResult] = useState(null)
 
+  // ← NUEVO: Estado para pasajeros
+  const [passengers, setPassengers] = useState([])
+
   const [form, setForm] = useState({ name: '', email: '', phone: '' })
 
   const available = event.available_capacity
@@ -21,19 +25,32 @@ export default function EventPanel({ event, onClose }) {
   const discount = hasOffer ? Math.round((1 - event.price / event.original_price) * 100) : null
   const total = Number(event.price) * qty
 
+  // ← NUEVO: Handler para cuando cambian los pasajeros
+  const handlePassengersChange = (passengersData) => {
+    setPassengers(passengersData)
+  }
+
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.phone) {
-      toast.error('Completa todos los campos')
+    // ← NUEVO: Validar pasajeros en vez de form simple
+    const allValid = passengers.every(p => 
+      p.full_name && 
+      p.email && 
+      p.phone &&
+      (p.trip_type === 'return_only' || p.pickup_point) &&
+      (p.trip_type === 'outbound_only' || p.return_point)
+    )
+    
+    if (!allValid) {
+      toast.error('Por favor completa todos los campos de los pasajeros')
       return
     }
+
     setLoading(true)
     try {
+      // ← NUEVO: Payload con sistema de pasajeros
       const payload = {
         event_id: event.id,
-        customer_name: form.name,
-        customer_email: form.email,
-        customer_phone: form.phone,
-        quantity: qty,
+        passengers: passengers,  // ← Enviar array de pasajeros
         payment_method: method,
         notification_method: notif
       }
@@ -176,60 +193,40 @@ export default function EventPanel({ event, onClose }) {
         {step === 'form' && (
           <div className="epanel__body">
             <button className="epanel__back" onClick={() => setStep('info')}>← Volver</button>
-            <h2 className="epanel__title">Tus datos</h2>
+            <h2 className="epanel__title">Datos de pasajeros</h2>
             <p className="epanel__subdesc">
               {event.title} · {qty} {qty === 1 ? 'cupo' : 'cupos'} · ${total.toLocaleString('es-CL')} CLP
             </p>
 
-            <div className="epanel__form">
-              <div className="epanel__field">
-                <label>Nombre completo</label>
-                <input
-                  placeholder="Juan Pérez"
-                  value={form.name}
-                  onChange={e => setForm({...form, name: e.target.value})}
-                />
-              </div>
-              <div className="epanel__field">
-                <label>Correo electrónico</label>
-                <input
-                  type="email"
-                  placeholder="juan@email.com"
-                  value={form.email}
-                  onChange={e => setForm({...form, email: e.target.value})}
-                />
-              </div>
-              <div className="epanel__field">
-                <label>Teléfono (WhatsApp)</label>
-                <input
-                  placeholder="+56912345678"
-                  value={form.phone}
-                  onChange={e => setForm({...form, phone: e.target.value})}
-                />
-              </div>
+            {/* ← NUEVO: Formulario de pasajeros */}
+            <PassengerForm 
+              quantity={qty}
+              onPassengersChange={handlePassengersChange}
+            />
 
-              <div className="epanel__notif">
-                <div className="epanel__section-title">¿Cómo quieres recibir tu ticket?</div>
-                <div className="epanel__notif-opts">
-                  <button
-                    className={`epanel__notif-opt ${notif === 'email' ? 'epanel__notif-opt--active' : ''}`}
-                    onClick={() => setNotif('email')}
-                  >📧 Email</button>
-                  <button
-                    className={`epanel__notif-opt ${notif === 'whatsapp' ? 'epanel__notif-opt--active' : ''}`}
-                    onClick={() => setNotif('whatsapp')}
-                  >💬 WhatsApp</button>
-                </div>
+            {/* ← NUEVO: Método de notificación movido aquí */}
+            <div className="epanel__notif" style={{ marginTop: '24px' }}>
+              <div className="epanel__section-title">¿Cómo quieres recibir tus tickets?</div>
+              <div className="epanel__notif-opts">
+                <button
+                  className={`epanel__notif-opt ${notif === 'email' ? 'epanel__notif-opt--active' : ''}`}
+                  onClick={() => setNotif('email')}
+                >📧 Email</button>
+                <button
+                  className={`epanel__notif-opt ${notif === 'whatsapp' ? 'epanel__notif-opt--active' : ''}`}
+                  onClick={() => setNotif('whatsapp')}
+                >💬 WhatsApp</button>
               </div>
-
-              <button
-                className="epanel__next-btn"
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? 'Procesando...' : method === 'mercadopago' ? 'Ir a pagar con Mercado Pago →' : 'Reservar con transferencia →'}
-              </button>
             </div>
+
+            <button
+              className="epanel__next-btn"
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{ marginTop: '24px' }}
+            >
+              {loading ? 'Procesando...' : method === 'mercadopago' ? 'Ir a pagar con Mercado Pago →' : 'Reservar con transferencia →'}
+            </button>
           </div>
         )}
 
@@ -259,7 +256,7 @@ export default function EventPanel({ event, onClose }) {
             </div>
 
             <p className="epanel__success-hint">
-              Recibirás tu ticket QR una vez confirmado el pago por el administrador.
+              Recibirás tus tickets QR una vez confirmado el pago por el administrador.
             </p>
             <button className="epanel__next-btn" onClick={onClose}>Cerrar</button>
           </div>
