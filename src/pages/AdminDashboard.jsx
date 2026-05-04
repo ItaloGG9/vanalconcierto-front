@@ -5,7 +5,7 @@ import {
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
   adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
-  adminGetEventVans, adminAssignVan, adminUnassignVan, adminGetEventVans // ← NUEVO
+  adminGetVans, adminGetEventVans, adminAssignVan, adminUnassignVan // ← NUEVO
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'
@@ -17,6 +17,7 @@ const TABS = [
   { id: 'bookings', label: '📦 Reservas' },
   { id: 'events',   label: '🎵 Eventos' },
   { id: 'drivers',  label: '🚐 Choferes' },
+  { id: 'vans',     label: '🚐 Vans' }
 ]
 
 // ── Booking status badge ──────────────────────────────────────────────────────
