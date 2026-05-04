@@ -4,10 +4,12 @@ import {
   adminGetBookings, adminConfirmTransfer,
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents
+  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
+  adminGetEventVans // ← NUEVO
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'
+import BookingPassengersManager from '../components/BookingPassengersManager' // ← NUEVO
 import './AdminDashboard.css'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -141,6 +143,8 @@ function BookingsTab() {
   const [bookings, setBookings] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [expandedBookings, setExpandedBookings] = useState([]) // ← NUEVO
+  const [eventVans, setEventVans] = useState({}) // ← NUEVO
 
   const load = () => {
     setLoading(true)
@@ -158,6 +162,33 @@ function BookingsTab() {
       toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
       load()
     } catch { toast.error('Error al procesar') }
+  }
+
+  // ← NUEVO: Cargar vans de un evento
+  const loadEventVans = async (eventId) => {
+    if (eventVans[eventId]) return
+    
+    try {
+      const res = await adminGetEventVans(eventId)
+      setEventVans(prev => ({...prev, [eventId]: res.data}))
+    } catch (err) {
+      console.error('Error cargando vans:', err)
+    }
+  }
+
+  // ← NUEVO: Toggle expandir
+  const toggleExpandBooking = async (bookingId, eventId) => {
+    const isExpanding = !expandedBookings.includes(bookingId)
+    
+    setExpandedBookings(prev => 
+      prev.includes(bookingId) 
+        ? prev.filter(id => id !== bookingId)
+        : [...prev, bookingId]
+    )
+    
+    if (isExpanding) {
+      await loadEventVans(eventId)
+    }
   }
 
   return (
@@ -178,6 +209,7 @@ function BookingsTab() {
           <table className="adm-table">
             <thead>
               <tr>
+                <th style={{width: '40px'}}></th> {/* ← NUEVO: Columna expandir */}
                 <th>Cliente</th>
                 <th>Evento</th>
                 <th>Cupos</th>
@@ -189,36 +221,61 @@ function BookingsTab() {
             </thead>
             <tbody>
               {bookings.length === 0 && (
-                <tr><td colSpan={7} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>Sin resultados</td></tr>
+                <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>Sin resultados</td></tr>
               )}
               {bookings.map(b => (
-                <tr key={b.id}>
-                  <td>
-                    <div className="adm-cell-main">{b.customer_name}</div>
-                    <div className="adm-cell-sub">{b.customer_email}</div>
-                  </td>
-                  <td>{b.events?.title || '—'}</td>
-                  <td>{b.quantity}</td>
-                  <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
-                  <td>
-                    <span className="adm-method">
-                      {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
-                    </span>
-                  </td>
-                  <td><StatusBadge status={b.payment_status} /></td>
-                  <td>
-                    {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
-                      <div className="adm-actions">
-                        <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
-                          <Check size={14} />
-                        </button>
-                        <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+                <>
+                  {/* Fila principal */}
+                  <tr key={b.id}>
+                    <td> {/* ← NUEVO: Botón expandir */}
+                      <button 
+                        onClick={() => toggleExpandBooking(b.id, b.event_id)}
+                        className="btn-expand"
+                        title="Ver/asignar pasajeros"
+                      >
+                        {expandedBookings.includes(b.id) ? '▼' : '▶'}
+                      </button>
+                    </td>
+                    <td>
+                      <div className="adm-cell-main">{b.customer_name}</div>
+                      <div className="adm-cell-sub">{b.customer_email}</div>
+                    </td>
+                    <td>{b.events?.title || '—'}</td>
+                    <td>{b.quantity}</td>
+                    <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
+                    <td>
+                      <span className="adm-method">
+                        {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
+                      </span>
+                    </td>
+                    <td><StatusBadge status={b.payment_status} /></td>
+                    <td>
+                      {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
+                        <div className="adm-actions">
+                          <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
+                            <Check size={14} />
+                          </button>
+                          <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                  
+                  {/* ← NUEVO: Fila expandida con pasajeros */}
+                  {expandedBookings.includes(b.id) && (
+                    <tr className="expanded-row">
+                      <td colSpan={8}>
+                        <BookingPassengersManager 
+                          bookingId={b.id}
+                          eventId={b.event_id}
+                          vans={eventVans[b.event_id] || []}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
