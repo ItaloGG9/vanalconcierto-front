@@ -1,0 +1,117 @@
+/* src/components/PassengerForm.css */
+
+.passenger-forms {
+  margin-top: 24px;
+}
+
+.passenger-forms__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.passenger-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.passenger-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.passenger-card__number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.passenger-field {
+  margin-bottom: 16px;
+}
+
+.passenger-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.passenger-field input,
+.passenger-field select {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.passenger-field input:focus,
+.passenger-field select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.1);
+}
+
+.trip-type-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trip-type-option {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trip-type-option:hover {
+  border-color: var(--primary);
+  background: rgba(255, 184, 0, 0.05);
+}
+
+.trip-type-option input[type="radio"] {
+  width: auto;
+  margin: 0;
+}
+
+.trip-type-option input[type="radio"]:checked + span {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.trip-type-option span {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .trip-type-options {
+    flex-direction: column;
+  }
+  
+  .trip-type-option {
+    min-width: 100%;
+  }
+}
