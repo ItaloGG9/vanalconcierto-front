@@ -5,19 +5,20 @@ import {
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
   adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
-  adminGetVans, adminGetEventVans, adminAssignVan, adminUnassignVan // ← NUEVO
+  adminGetVans, adminCreateVan, adminDeleteVan,
+  adminGetEventVans, adminAssignVan, adminUnassignVan,
+  adminGetBookingPassengers
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'
-import BookingPassengersManager from '../components/BookingPassengersManager' // ← NUEVO
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus } from 'lucide-react'
+import BookingPassengersManager from '../components/BookingPassengersManager'
 import './AdminDashboard.css'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'bookings', label: '📦 Reservas' },
   { id: 'events',   label: '🎵 Eventos' },
-  { id: 'drivers',  label: '🚐 Choferes' },
-  { id: 'vans',     label: '🚐 Vans' }
+  { id: 'vans',     label: '🚐 Vans' },
 ]
 
 // ── Booking status badge ──────────────────────────────────────────────────────
@@ -37,8 +38,7 @@ function StatusBadge({ status }) {
   )
 }
 
-// ── ASSIGN DRIVER MODAL ───────────────────────────────────────────────────────
-// ── ASSIGN VAN MODAL (REEMPLAZAR AssignDriverModal) ──────────────────────────
+// ── ASSIGN VAN MODAL ──────────────────────────────────────────────────────────
 function AssignVanModal({ event, onClose, onAssigned }) {
   const [vans, setVans] = useState([])
   const [assignedVans, setAssignedVans] = useState([])
@@ -98,7 +98,7 @@ function AssignVanModal({ event, onClose, onAssigned }) {
             </div>
           ) : vans.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              No hay vans registradas
+              No hay vans registradas. Créalas primero en la pestaña Vans.
             </div>
           ) : (
             <div className="drivers-assign-list">
@@ -143,8 +143,8 @@ function BookingsTab() {
   const [bookings, setBookings] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
-  const [expandedBookings, setExpandedBookings] = useState([]) // ← NUEVO
-  const [eventVans, setEventVans] = useState({}) // ← NUEVO
+  const [expandedBookings, setExpandedBookings] = useState([])
+  const [eventVans, setEventVans] = useState({})
 
   const load = () => {
     setLoading(true)
@@ -164,7 +164,6 @@ function BookingsTab() {
     } catch { toast.error('Error al procesar') }
   }
 
-  // ← NUEVO: Cargar vans de un evento
   const loadEventVans = async (eventId) => {
     if (eventVans[eventId]) return
     
@@ -176,7 +175,6 @@ function BookingsTab() {
     }
   }
 
-  // ← NUEVO: Toggle expandir
   const toggleExpandBooking = async (bookingId, eventId) => {
     const isExpanding = !expandedBookings.includes(bookingId)
     
@@ -209,7 +207,7 @@ function BookingsTab() {
           <table className="adm-table">
             <thead>
               <tr>
-                <th style={{width: '40px'}}></th> {/* ← NUEVO: Columna expandir */}
+                <th style={{width: '40px'}}></th>
                 <th>Cliente</th>
                 <th>Evento</th>
                 <th>Cupos</th>
@@ -225,9 +223,8 @@ function BookingsTab() {
               )}
               {bookings.map(b => (
                 <>
-                  {/* Fila principal */}
                   <tr key={b.id}>
-                    <td> {/* ← NUEVO: Botón expandir */}
+                    <td>
                       <button 
                         onClick={() => toggleExpandBooking(b.id, b.event_id)}
                         className="btn-expand"
@@ -263,7 +260,6 @@ function BookingsTab() {
                     </td>
                   </tr>
                   
-                  {/* ← NUEVO: Fila expandida con pasajeros */}
                   {expandedBookings.includes(b.id) && (
                     <tr className="expanded-row">
                       <td colSpan={8}>
@@ -297,15 +293,14 @@ function EventsTab() {
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [assigningEvent, setAssigningEvent] = useState(null)
-  const [eventDrivers, setEventDrivers] = useState({})
+  const [eventVans, setEventVans] = useState({})
 
   const load = () => {
     getEvents(false).then(r => {
       setEvents(r.data)
-      // Cargar choferes asignados para cada evento
       r.data.forEach(event => {
-        adminGetEventDrivers(event.id).then(res => {
-          setEventDrivers(prev => ({
+        adminGetEventVans(event.id).then(res => {
+          setEventVans(prev => ({
             ...prev,
             [event.id]: res.data
           }))
@@ -401,30 +396,27 @@ function EventsTab() {
               <input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} />
             </div>
             <div className="adm-field">
-              <label>Capacidad Total (suma de todas las vans) *</label>
-              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34 (ej: 2 vans × 17)" />
-              <small style={{color:'var(--text-3)',fontSize:'12px',display:'block',marginTop:'4px'}}>
-                Ej: 2 vans de 17 + 1 van de 15 = 49 cupos
-              </small>
+              <label>Capacidad Total *</label>
+              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
             </div>
             <div className="adm-field">
               <label>Precio CLP *</label>
               <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" />
             </div>
             <div className="adm-field">
-              <label>Precio original (oferta)</label>
+              <label>Precio original</label>
               <input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" />
             </div>
             <div className="adm-field adm-field--full">
               <label>Puntos de recogida</label>
-              <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00&#10;Punto 2: Metro Baquedano 08:15" />
+              <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00" />
             </div>
             <div className="adm-field adm-field--full">
               <label>Descripción</label>
-              <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Descripción del viaje..." />
+              <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
             </div>
             <div className="adm-field">
-              <label>Imagen del evento</label>
+              <label>Imagen</label>
               <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} />
             </div>
             <div className="adm-field adm-field--check">
@@ -449,25 +441,22 @@ function EventsTab() {
 
       <div className="adm-events-list">
         {events.map(ev => {
-          const drivers = eventDrivers[ev.id] || []
+          const vans = eventVans[ev.id] || []
           const available = ev.available_capacity ?? 0
           return (
             <div key={ev.id} className="adm-event-row">
               <div className="adm-event-img">
-                {ev.image_url
-                  ? <img src={ev.image_url} alt={ev.title} />
-                  : <span>🎵</span>
-                }
+                {ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}
               </div>
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
                 <div className="adm-cell-sub">
                   {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles
                 </div>
-                {drivers.length > 0 && (
+                {vans.length > 0 && (
                   <div className="adm-event-drivers">
                     <Users size={12} />
-                    {drivers.map(d => d.users?.full_name).join(', ')}
+                    {vans.map(v => v.name).join(', ')}
                   </div>
                 )}
               </div>
@@ -481,7 +470,7 @@ function EventsTab() {
                 <button 
                   className="adm-btn adm-btn--primary" 
                   onClick={() => setAssigningEvent(ev)}
-                  title="Asignar choferes"
+                  title="Asignar vans"
                 >
                   <UserPlus size={14} />
                 </button>
@@ -494,158 +483,131 @@ function EventsTab() {
       </div>
 
       {assigningEvent && (
-  <AssignVanModal
-    event={assigningEvent}
-    onClose={() => setAssigningEvent(null)}
-    onAssigned={() => load()}
-  />
-)}
+        <AssignVanModal
+          event={assigningEvent}
+          onClose={() => setAssigningEvent(null)}
+          onAssigned={() => load()}
+        />
+      )}
     </div>
   )
 }
 
-// ── DRIVERS TAB ───────────────────────────────────────────────────────────────
-function DriversTab() {
-  const [drivers, setDrivers] = useState([])
+// ── VANS TAB ──────────────────────────────────────────────────────────────────
+function VansTab() {
+  const [vans, setVans] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[],password: '' })
+  const [form, setForm] = useState({ 
+    name:'', license_plate:'', capacity:17, 
+    owner_email:'', password:'', 
+    current_driver_name:'', current_driver_phone:'' 
+  })
   const [saving, setSaving] = useState(false)
 
-  const DAYS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo']
-
-  const load = () => adminGetDrivers().then(r => setDrivers(r.data)).catch(() => {})
+  const load = () => adminGetVans().then(r => setVans(r.data)).catch(() => {})
   useEffect(() => { load() }, [])
 
-  const toggleDay = (day) => {
-    setForm(f => ({
-      ...f,
-      available_days: f.available_days.includes(day)
-        ? f.available_days.filter(d => d !== day)
-        : [...f.available_days, day]
-    }))
-  }
-
   const save = async () => {
-    if (!form.email || !form.full_name || !form.van_plate) {
+    if (!form.name || !form.owner_email || !form.password) {
       toast.error('Completa los campos obligatorios')
       return
     }
     setSaving(true)
     try {
-      await adminCreateDriver(form)
-      toast.success('Chofer creado exitosamente')
+      await adminCreateVan(form)
+      toast.success('Van creada exitosamente')
       setShowForm(false)
-      setForm({ email:'', full_name:'', phone:'', van_plate:'', van_capacity:8, available_days:[] })
+      setForm({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' })
       load()
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error creando chofer')
+      toast.error(e.response?.data?.detail || 'Error creando van')
     } finally { setSaving(false) }
   }
 
-  const verify = async (id) => {
-    await adminVerifyDriver(id)
-    toast.success('Chofer verificado ✅')
-    load()
-  }
-
   const remove = async (id) => {
-    if (!confirm('¿Desactivar este chofer?')) return
-    await adminDeleteDriver(id)
-    toast.success('Chofer desactivado')
-    load()
+    if (!confirm('¿Eliminar esta van?')) return
+    try {
+      await adminDeleteVan(id)
+      toast.success('Van eliminada')
+      load()
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error eliminando van')
+    }
   }
 
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
-        <h2>Choferes</h2>
+        <h2>Vans</h2>
         <button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={14} /> Nuevo chofer
+          <Plus size={14} /> Nueva van
         </button>
       </div>
 
       {showForm && (
         <div className="adm-form-card">
-          <h3>Registrar chofer</h3>
+          <h3>Registrar van</h3>
           <div className="adm-form-grid">
             <div className="adm-field">
-              <label>Nombre completo *</label>
-              <input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="Juan Pérez" />
+              <label>Nombre *</label>
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Van 1" />
             </div>
             <div className="adm-field">
-              <label>Email *</label>
-              <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="chofer@email.com" />
-            </div>
-            <div className="adm-field">
-              <label>Contraseña para el chofer</label>
-              <input
-                type="password"
-                value={form.password || ''}
-                onChange={e => setForm({...form, password: e.target.value})}
-                placeholder="Mínimo 8 caracteres"
-              />
-            </div>
-            <div className="adm-field">
-              <label>Teléfono</label>
-              <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+56912345678" />
-            </div>
-            <div className="adm-field">
-              <label>Patente del furgón *</label>
-              <input value={form.van_plate} onChange={e => setForm({...form, van_plate: e.target.value})} placeholder="AB1234" />
+              <label>Patente</label>
+              <input value={form.license_plate} onChange={e => setForm({...form, license_plate: e.target.value})} placeholder="BBDD-12" />
             </div>
             <div className="adm-field">
               <label>Capacidad</label>
-              <input type="number" value={form.van_capacity} onChange={e => setForm({...form, van_capacity: parseInt(e.target.value)})} />
+              <input type="number" value={form.capacity} onChange={e => setForm({...form, capacity: parseInt(e.target.value)})} />
             </div>
-            <div className="adm-field adm-field--full">
-              <label>Días disponibles</label>
-              <div className="adm-days">
-                {DAYS.map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={`adm-day ${form.available_days.includes(d) ? 'adm-day--active' : ''}`}
-                    onClick={() => toggleDay(d)}
-                  >{d.slice(0,3)}</button>
-                ))}
-              </div>
+            <div className="adm-field">
+              <label>Email (para login PWA) *</label>
+              <input type="email" value={form.owner_email} onChange={e => setForm({...form, owner_email: e.target.value})} placeholder="van1@email.com" />
+            </div>
+            <div className="adm-field">
+              <label>Contraseña *</label>
+              <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div className="adm-field">
+              <label>Conductor actual</label>
+              <input value={form.current_driver_name} onChange={e => setForm({...form, current_driver_name: e.target.value})} placeholder="Juan Pérez" />
+            </div>
+            <div className="adm-field">
+              <label>Teléfono conductor</label>
+              <input value={form.current_driver_phone} onChange={e => setForm({...form, current_driver_phone: e.target.value})} placeholder="+56912345678" />
             </div>
           </div>
           <div className="adm-form-actions">
             <button className="adm-btn adm-btn--ghost" onClick={() => setShowForm(false)}>Cancelar</button>
             <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
-              {saving ? 'Guardando...' : 'Crear chofer'}
+              {saving ? 'Guardando...' : 'Crear van'}
             </button>
           </div>
         </div>
       )}
 
       <div className="adm-drivers-list">
-        {drivers.map(d => (
-          <div key={d.id} className="adm-driver-row">
+        {vans.map(v => (
+          <div key={v.id} className="adm-driver-row">
             <div className="adm-driver-avatar">
-              {d.avatar_url ? <img src={d.avatar_url} alt={d.full_name} /> : <span>🧑‍✈️</span>}
+              <span>🚐</span>
             </div>
             <div className="adm-driver-info">
-              <div className="adm-cell-main">{d.full_name}</div>
+              <div className="adm-cell-main">{v.name}</div>
               <div className="adm-cell-sub">
-                🚐 {d.van_plate} · {d.van_capacity} pasajeros
-                {d.available_days?.length > 0 && ` · ${d.available_days.join(', ')}`}
+                {v.license_plate && `📋 ${v.license_plate} · `}
+                {v.capacity} pasajeros
+                {v.current_driver_name && ` · 🧑‍✈️ ${v.current_driver_name}`}
               </div>
             </div>
             <div>
-              {d.is_verified
-                ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Verificado</span>
-                : <span className="status-badge" style={{'--sc':'#f5c518'}}>Pendiente</span>
+              {v.is_active
+                ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activa</span>
+                : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactiva</span>
               }
             </div>
             <div className="adm-actions">
-              {!d.is_verified && (
-                <button className="adm-btn adm-btn--success" onClick={() => verify(d.id)}>
-                  <Check size={14} /> Verificar
-                </button>
-              )}
-              <button className="adm-btn adm-btn--danger" onClick={() => remove(d.id)}>
+              <button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}>
                 <Trash2 size={14} />
               </button>
             </div>
@@ -695,7 +657,7 @@ export default function AdminDashboard() {
       <main className="adm-main">
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'events'   && <EventsTab />}
-        {activeTab === 'drivers'  && <DriversTab />}
+        {activeTab === 'vans'     && <VansTab />}
       </main>
     </div>
   )
