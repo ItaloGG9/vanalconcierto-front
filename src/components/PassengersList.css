@@ -1,0 +1,160 @@
+/* src/components/PassengersList.css */
+
+.passengers-list {
+  padding: 20px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.passengers-list h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.passengers-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.passengers-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+}
+
+.passengers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.passenger-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.passenger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.passenger-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.passenger-van {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: var(--primary);
+  color: #000;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.passenger-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.info-row strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.trip-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trip-badge.round_trip {
+  background: #d4edda;
+  color: #155724;
+}
+
+.trip-badge.outbound_only {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.trip-badge.return_only {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.qr-code {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* Fila expandida en la tabla */
+.passengers-expanded-row {
+  background: var(--bg) !important;
+}
+
+.passengers-expanded-row td {
+  padding: 0 !important;
+}
+
+.btn-view-passengers {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.btn-view-passengers:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .passengers-grid {
+    grid-template-columns: 1fr;
+  }
+}

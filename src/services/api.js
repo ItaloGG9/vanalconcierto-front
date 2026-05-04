@@ -74,6 +74,7 @@ export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
 export const adminGetEventPassengers = (eventId) => api.get(`/bookings/events/${eventId}/passengers`)
 export const adminReassignPassenger = (passengerId, vanId) => api.put(`/bookings/passengers/${passengerId}/reassign`, null, { params: { van_id: vanId } })
 export const adminAutoAssignPassengers = (eventId) => api.post(`/bookings/events/${eventId}/auto-assign`)
+export const adminGetBookingPassengers = (bookingId) => api.get(`/bookings/bookings/${bookingId}/passengers`)
 
 // ── PWA Chofer ────────────────────────────────────────────────
 export const vanLogin = (email, password) => api.post('/vans/login', { email, password })
