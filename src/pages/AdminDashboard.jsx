@@ -5,7 +5,7 @@ import {
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
   adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
-  adminGetEventVans // ← NUEVO
+  adminGetEventVans, adminAssignVan, adminUnassignVan, adminGetEventVans // ← NUEVO
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Upload, Users, Calendar, ShoppingBag, ChevronDown, UserPlus } from 'lucide-react'

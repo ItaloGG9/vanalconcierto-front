@@ -83,4 +83,9 @@ export const scanPassengerQR = (vanId, qrCode, tripDirection) => api.post(`/driv
 export const getVanStats = (vanId, eventId) => api.get(`/driver/van/${vanId}/stats`, { params: { event_id: eventId } })
 export const updateVanDriver = (vanId, driverName, driverPhone) => api.put(`/vans/${vanId}/driver`, null, { params: { driver_name: driverName, driver_phone: driverPhone } })
 
+export const adminGetVans = () => api.get('/vans/')
+export const adminAssignVan = (eventId, vanId) => api.post('/vans/assign', null, { params: { event_id: eventId, van_id: vanId } })
+export const adminUnassignVan = (eventId, vanId) => api.delete('/vans/unassign', { params: { event_id: eventId, van_id: vanId } })
+export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
+
 export default api
