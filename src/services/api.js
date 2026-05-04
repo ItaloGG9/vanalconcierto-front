@@ -68,11 +68,6 @@ export const adminAssignVan = (eventId, vanId) => api.post('/vans/assign', null,
 export const adminUnassignVan = (eventId, vanId) => api.delete('/vans/unassign', { params: { event_id: eventId, van_id: vanId } })
 export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
 
-// Asignar/desasignar vans a eventos
-export const adminAssignVan = (eventId, vanId) => api.post('/vans/assign', null, { params: { event_id: eventId, van_id: vanId } })
-export const adminUnassignVan = (eventId, vanId) => api.delete('/vans/unassign', { params: { event_id: eventId, van_id: vanId } })
-export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
-
 // ── Gestión de pasajeros ──────────────────────────────────────
 export const adminGetEventPassengers = (eventId) => api.get(`/bookings/events/${eventId}/passengers`)
 export const adminReassignPassenger = (passengerId, vanId) => api.put(`/bookings/passengers/${passengerId}/reassign`, null, { params: { van_id: vanId } })
@@ -85,6 +80,5 @@ export const getVanPassengers = (vanId, eventId) => api.get(`/driver/van/${vanId
 export const scanPassengerQR = (vanId, qrCode, tripDirection) => api.post(`/driver/van/${vanId}/scan`, null, { params: { qr_code: qrCode, trip_direction: tripDirection } })
 export const getVanStats = (vanId, eventId) => api.get(`/driver/van/${vanId}/stats`, { params: { event_id: eventId } })
 export const updateVanDriver = (vanId, driverName, driverPhone) => api.put(`/vans/${vanId}/driver`, null, { params: { driver_name: driverName, driver_phone: driverPhone } })
-
 
 export default api
