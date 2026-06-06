@@ -232,25 +232,6 @@
   margin-top: 20px;
 }
 
-/* Días */
-.adm-days { display: flex; gap: 8px; flex-wrap: wrap; }
-.adm-day {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  text-transform: capitalize;
-  transition: all 0.15s;
-}
-.adm-day--active {
-  background: rgba(245,197,24,0.1);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 /* Events list */
 .adm-events-list, .adm-drivers-list {
   display: flex;
@@ -299,13 +280,32 @@
 .adm-event-info, .adm-driver-info { flex: 1; min-width: 0; }
 .adm-event-status { flex-shrink: 0; }
 
-@media (max-width: 900px) {
-  .adm-sidebar { display: none; }
-  .adm-main { margin-left: 0; padding: 20px 16px; }
-  .adm-form-grid { grid-template-columns: 1fr; }
-  .adm-event-row { flex-wrap: wrap; }
+/* Botón expand en tabla */
+.btn-expand {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
 }
-/* Agregar estos estilos al final de AdminDashboard.css */
+
+.btn-expand:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+/* Fila expandida */
+.expanded-row td {
+  padding: 0 !important;
+}
+
+.expanded-row {
+  background: var(--bg-2);
+}
 
 /* ── Modal overlay ──────────────────────────────────────── */
 .modal-overlay {
@@ -458,4 +458,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .adm-sidebar { display: none; }
+  .adm-main { margin-left: 0; padding: 20px 16px; }
+  .adm-form-grid { grid-template-columns: 1fr; }
+  .adm-event-row { flex-wrap: wrap; }
 }

@@ -138,10 +138,13 @@ function AssignVanModal({ event, onClose, onAssigned }) {
   )
 }
 
-// ── BOOKINGS TAB ──────────────────────────────────────────────────────────────
+// ── BOOKINGS TAB CON FILTRO DE EVENTOS ────────────────────────────────────────
 function BookingsTab() {
   const [bookings, setBookings] = useState([])
+  const [events, setEvents] = useState([])
   const [filter, setFilter] = useState('all')
+  const [selectedEventId, setSelectedEventId] = useState(null)
+  const [showEventDropdown, setShowEventDropdown] = useState(false)
   const [loading, setLoading] = useState(true)
   const [expandedBookings, setExpandedBookings] = useState([])
   const [eventVans, setEventVans] = useState({})
@@ -153,6 +156,12 @@ function BookingsTab() {
       .catch(() => toast.error('Error cargando reservas'))
       .finally(() => setLoading(false))
   }
+
+  useEffect(() => {
+    getEvents(false)
+      .then(r => setEvents(r.data))
+      .catch(() => console.error('Error cargando eventos'))
+  }, [])
 
   useEffect(load, [filter])
 
@@ -189,18 +198,150 @@ function BookingsTab() {
     }
   }
 
+  const bookingsFiltrados = selectedEventId 
+    ? bookings.filter(b => b.event_id === selectedEventId)
+    : bookings
+
+  const getNombreEvento = (eventId) => {
+    return events.find(e => e.id === eventId)?.title || 'Evento desconocido'
+  }
+
+  const eventoSeleccionado = selectedEventId 
+    ? events.find(e => e.id === selectedEventId)?.title 
+    : 'Todos los eventos'
+
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Reservas</h2>
-        <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
-          <option value="all">Todas</option>
-          <option value="pending">Pendientes</option>
-          <option value="reserved">Reservadas (transferencia)</option>
-          <option value="confirmed">Confirmadas</option>
-          <option value="rejected">Rechazadas</option>
-        </select>
+        <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+          {/* FILTRO POR EVENTO */}
+          <div style={{position: 'relative', minWidth: '200px'}}>
+            <button 
+              className="adm-select"
+              onClick={() => setShowEventDropdown(!showEventDropdown)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{eventoSeleccionado}</span>
+              <span style={{transform: showEventDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s'}}>
+                ▼
+              </span>
+            </button>
+
+            {/* Dropdown menu */}
+            {showEventDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                marginTop: '4px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                maxHeight: '300px',
+                overflowY: 'auto'
+              }}>
+                {/* Opción: Todos */}
+                <div
+                  onClick={() => {
+                    setSelectedEventId(null)
+                    setShowEventDropdown(false)
+                  }}
+                  style={{
+                    padding: '10px 16px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid var(--border)',
+                    background: selectedEventId === null ? 'rgba(245, 197, 24, 0.1)' : 'transparent',
+                    color: selectedEventId === null ? 'var(--accent)' : 'var(--text)',
+                    fontWeight: selectedEventId === null ? '600' : '400',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = 'var(--bg-2)'}
+                  onMouseLeave={(e) => e.target.style.background = selectedEventId === null ? 'rgba(245, 197, 24, 0.1)' : 'transparent'}
+                >
+                  📋 Todos ({bookings.length})
+                </div>
+
+                {/* Opciones de eventos */}
+                {events.map(evento => {
+                  const numReservasEvento = bookings.filter(b => b.event_id === evento.id).length
+                  return (
+                    <div
+                      key={evento.id}
+                      onClick={() => {
+                        setSelectedEventId(evento.id)
+                        setShowEventDropdown(false)
+                      }}
+                      style={{
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: selectedEventId === evento.id ? 'rgba(245, 197, 24, 0.1)' : 'transparent',
+                        color: selectedEventId === evento.id ? 'var(--accent)' : 'var(--text)',
+                        fontWeight: selectedEventId === evento.id ? '600' : '400',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-2)'}
+                      onMouseLeave={(e) => e.target.style.background = selectedEventId === evento.id ? 'rgba(245, 197, 24, 0.1)' : 'transparent'}
+                    >
+                      <span>{evento.title}</span>
+                      <span style={{fontSize: '12px', background: 'var(--bg-2)', padding: '2px 6px', borderRadius: '3px'}}>
+                        {numReservasEvento}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Botón limpiar filtro */}
+          {selectedEventId && (
+            <button 
+              className="adm-btn adm-btn--ghost"
+              onClick={() => setSelectedEventId(null)}
+              title="Mostrar todas las reservas"
+              style={{padding: '6px 10px'}}
+            >
+              ✕ Limpiar
+            </button>
+          )}
+
+          {/* Filtro de estado original */}
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
+            <option value="all">Todos los estados</option>
+            <option value="pending">Pendientes</option>
+            <option value="reserved">Reservadas (transferencia)</option>
+            <option value="confirmed">Confirmadas</option>
+            <option value="rejected">Rechazadas</option>
+          </select>
+        </div>
       </div>
+
+      {/* Mostrar cuántas reservas se están viendo */}
+      {selectedEventId && (
+        <div style={{
+          fontSize: '13px',
+          color: 'var(--text-3)',
+          padding: '8px 0',
+          borderBottom: '1px solid var(--border)',
+          marginBottom: '12px'
+        }}>
+          Mostrando {bookingsFiltrados.length} de {bookings.length} reservas
+        </div>
+      )}
 
       {loading ? <div className="adm-loading">Cargando...</div> : (
         <div className="adm-table-wrap">
@@ -218,10 +359,12 @@ function BookingsTab() {
               </tr>
             </thead>
             <tbody>
-              {bookings.length === 0 && (
-                <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>Sin resultados</td></tr>
+              {bookingsFiltrados.length === 0 && (
+                <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
+                  {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
+                </td></tr>
               )}
-              {bookings.map(b => (
+              {bookingsFiltrados.map(b => (
                 <>
                   <tr key={b.id}>
                     <td>
@@ -237,7 +380,7 @@ function BookingsTab() {
                       <div className="adm-cell-main">{b.customer_name}</div>
                       <div className="adm-cell-sub">{b.customer_email}</div>
                     </td>
-                    <td>{b.events?.title || '—'}</td>
+                    <td>{getNombreEvento(b.event_id)}</td>
                     <td>{b.quantity}</td>
                     <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
                     <td>
