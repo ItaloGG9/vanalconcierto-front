@@ -541,6 +541,32 @@
   }
 }
 
+/* ── BOOKING CARD EXPANDED CONTENT ─────────────────────────── */
+/* Limitar altura para evitar expansión excesiva */
+.adm-booking-card > div[style*="marginTop"] {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+/* Scrollbar personalizado */
+.adm-booking-card > div[style*="marginTop"]::-webkit-scrollbar {
+  width: 4px;
+}
+
+.adm-booking-card > div[style*="marginTop"]::-webkit-scrollbar-track {
+  background: var(--bg-2);
+  border-radius: 4px;
+}
+
+.adm-booking-card > div[style*="marginTop"]::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.adm-booking-card > div[style*="marginTop"]::-webkit-scrollbar-thumb:hover {
+  background: var(--border-2);
+}
+
 /* ════════════════════════════════════════════════════════════
    RESPONSIVE - TABLET (768px)
    ════════════════════════════════════════════════════════════ */
@@ -718,6 +744,11 @@
     gap: 10px;
   }
 
+  /* Limitar altura del contenido expandido en móvil */
+  .adm-booking-card > div[style*="marginTop"] {
+    max-height: 250px !important;
+  }
+
   .adm-cell-main {
     font-size: 13px;
   }
@@ -814,5 +845,10 @@
     width: 40px;
     height: 40px;
     font-size: 20px;
+  }
+
+  /* Limitar altura en pantallas muy pequeñas */
+  .adm-booking-card > div[style*="marginTop"] {
+    max-height: 200px !important;
   }
 }
