@@ -47,6 +47,9 @@
   color: var(--text-2);
   text-align: left;
   transition: all 0.15s;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 .adm-sidebar__link:hover { background: var(--bg-2); color: var(--text); }
 .adm-sidebar__link--active {
@@ -69,6 +72,9 @@
   padding: 6px;
   border-radius: 6px;
   transition: all 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
 }
 .adm-sidebar__logout:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
 
@@ -80,6 +86,21 @@
   min-height: 100vh;
 }
 
+/* Mobile menu button */
+.adm-mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 11;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+
 /* Tab */
 .adm-tab { display: flex; flex-direction: column; gap: 24px; }
 
@@ -88,11 +109,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 .adm-tab__header h2 {
   font-family: var(--font-display);
   font-size: 32px;
   letter-spacing: 0.02em;
+  margin: 0;
+}
+
+/* Filters container */
+.adm-filters-container {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 /* Select */
@@ -116,6 +147,9 @@
   font-size: 13px;
   font-weight: 600;
   transition: all 0.15s;
+  border: none;
+  cursor: pointer;
+  background: none;
 }
 .adm-btn--primary {
   background: var(--accent);
@@ -141,9 +175,9 @@
 }
 .adm-btn--danger:hover { background: rgba(239,68,68,0.2); }
 
-.adm-actions { display: flex; gap: 8px; align-items: center; }
+.adm-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-/* Table */
+/* Table - Desktop */
 .adm-loading { color: var(--text-3); padding: 32px; text-align: center; }
 .adm-table-wrap {
   background: var(--bg-card);
@@ -230,6 +264,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 /* Events list */
@@ -307,6 +342,51 @@
   background: var(--bg-2);
 }
 
+/* ── BOOKING CARDS PARA MÓVIL ──────────────────────────────────── */
+.adm-booking-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-booking-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-booking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.adm-booking-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.adm-booking-card-label {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.adm-booking-card-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
 /* ── Modal overlay ──────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
@@ -321,12 +401,13 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.15s ease;
+  padding: 16px;
 }
 
 .modal-card {
   background: var(--bg-1);
   border-radius: 16px;
-  width: 90%;
+  width: 100%;
   max-width: 600px;
   max-height: 80vh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -460,10 +541,278 @@
   }
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .adm-sidebar { display: none; }
-  .adm-main { margin-left: 0; padding: 20px 16px; }
-  .adm-form-grid { grid-template-columns: 1fr; }
-  .adm-event-row { flex-wrap: wrap; }
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE - TABLET (768px)
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .adm-sidebar { width: 200px; }
+  .adm-main { margin-left: 200px; padding: 24px 16px; }
+  .adm-tab__header h2 { font-size: 24px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE - MÓVIL (768px) - SIN SCROLL HORIZONTAL
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Mostrar botón de menú */
+  .adm-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Sidebar móvil */
+  .adm-sidebar { 
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: 100%;
+    max-width: 280px;
+    z-index: 999;
+  }
+  .adm-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main responsive */
+  .adm-main { 
+    margin-left: 0; 
+    padding: 16px;
+    padding-top: 60px;
+  }
+
+  /* Header responsive */
+  .adm-tab__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .adm-tab__header h2 {
+    font-size: 20px;
+    margin-bottom: 0;
+  }
+
+  /* Filtros en móvil */
+  .adm-filters-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .adm-filters-container > div,
+  .adm-filters-container > select,
+  .adm-filters-container > button {
+    width: 100%;
+  }
+
+  /* Ocultar tabla en móvil */
+  .adm-table-wrap {
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .adm-table {
+    display: none;
+  }
+
+  /* Botones en móvil */
+  .adm-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .adm-actions {
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Forms en móvil */
+  .adm-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .adm-form-card {
+    padding: 16px;
+  }
+
+  .adm-form-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  /* Modal en móvil */
+  .modal-card {
+    border-radius: 12px;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    padding: 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  /* Event/Driver rows */
+  .adm-event-row, .adm-driver-row {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .adm-event-img {
+    width: 60px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .adm-driver-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  /* Tabla de vans */
+  .adm-drivers-list {
+    gap: 10px;
+  }
+
+  /* Events list */
+  .adm-event-row {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .adm-event-info {
+    width: 100%;
+  }
+
+  /* Select responsive */
+  .adm-select {
+    width: 100%;
+  }
+
+  /* Tab padding */
+  .adm-tab {
+    gap: 16px;
+  }
+
+  /* Booking card - Mobile optimized */
+  .adm-booking-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .adm-booking-card-row {
+    font-size: 12px;
+  }
+
+  .adm-booking-card-label {
+    font-size: 10px;
+  }
+
+  .adm-booking-card-header {
+    gap: 10px;
+  }
+
+  .adm-cell-main {
+    font-size: 13px;
+  }
+
+  .adm-cell-sub {
+    font-size: 11px;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE - MÓVIL PEQUEÑO (480px)
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .adm-main {
+    padding: 12px;
+    padding-top: 50px;
+  }
+
+  .adm-mobile-menu-btn {
+    top: 12px;
+    left: 12px;
+  }
+
+  .adm-tab__header h2 {
+    font-size: 18px;
+  }
+
+  .adm-booking-card {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .adm-booking-card-row {
+    font-size: 12px;
+  }
+
+  .adm-btn {
+    padding: 8px 10px;
+    min-height: 36px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .adm-cell-main {
+    font-size: 12px;
+  }
+
+  .adm-cell-sub {
+    font-size: 10px;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .adm-form-card {
+    padding: 12px;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h3 {
+    font-size: 16px;
+  }
+
+  .modal-close {
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .driver-assign-item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .driver-assign-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
 }

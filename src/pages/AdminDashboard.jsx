@@ -10,7 +10,7 @@ import {
   adminGetBookingPassengers
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Users, UserPlus } from 'lucide-react'
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu } from 'lucide-react'
 import BookingPassengersManager from '../components/BookingPassengersManager'
 import './AdminDashboard.css'
 
@@ -138,6 +138,95 @@ function AssignVanModal({ event, onClose, onAssigned }) {
   )
 }
 
+// ── BOOKING CARD PARA MÓVIL ──────────────────────────────────────────────────
+function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject }) {
+  return (
+    <div className="adm-booking-card">
+      {/* Encabezado con cliente y estado */}
+      <div className="adm-booking-card-header">
+        <div style={{ flex: 1 }}>
+          <div className="adm-cell-main">{booking.customer_name}</div>
+          <div className="adm-cell-sub">{booking.customer_email}</div>
+        </div>
+        <StatusBadge status={booking.payment_status} />
+      </div>
+
+      {/* Fila: Evento */}
+      <div className="adm-booking-card-row">
+        <span className="adm-booking-card-label">Evento</span>
+        <span className="adm-booking-card-value">{eventName}</span>
+      </div>
+
+      {/* Fila: Cupos y Total */}
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ flex: 1 }}>
+          <span className="adm-booking-card-label">Cupos</span>
+          <div className="adm-booking-card-value">{booking.quantity}</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <span className="adm-booking-card-label">Total</span>
+          <div className="adm-booking-card-value">${Number(booking.total_price).toLocaleString('es-CL')}</div>
+        </div>
+      </div>
+
+      {/* Fila: Método */}
+      <div className="adm-booking-card-row">
+        <span className="adm-booking-card-label">Método</span>
+        <span className="adm-method">
+          {booking.payment_method === 'mercadopago' ? '💳 Mercado Pago' : '🏦 Transferencia'}
+        </span>
+      </div>
+
+      {/* Botones de acción */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button 
+          className="adm-btn adm-btn--ghost"
+          onClick={() => onExpand()}
+          style={{ flex: 1 }}
+        >
+          {expanded ? '▼ Ocultar' : '▶ Pasajeros'}
+        </button>
+        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
+          <>
+            <button 
+              className="adm-btn adm-btn--success"
+              onClick={() => onConfirm()}
+              title="Confirmar"
+            >
+              <Check size={14} />
+            </button>
+            <button 
+              className="adm-btn adm-btn--danger"
+              onClick={() => onReject()}
+              title="Rechazar"
+            >
+              <X size={14} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Contenido expandido */}
+      {expanded && (
+        <div style={{
+          marginTop: '12px',
+          paddingTop: '12px',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg-2)',
+          padding: '12px',
+          borderRadius: '8px'
+        }}>
+          <BookingPassengersManager 
+            bookingId={booking.id}
+            eventId={booking.event_id}
+            vans={[]}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── BOOKINGS TAB CON FILTRO DE EVENTOS ────────────────────────────────────────
 function BookingsTab() {
   const [bookings, setBookings] = useState([])
@@ -148,6 +237,13 @@ function BookingsTab() {
   const [loading, setLoading] = useState(true)
   const [expandedBookings, setExpandedBookings] = useState([])
   const [eventVans, setEventVans] = useState({})
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const load = () => {
     setLoading(true)
@@ -214,9 +310,9 @@ function BookingsTab() {
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Reservas</h2>
-        <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <div className="adm-filters-container">
           {/* FILTRO POR EVENTO */}
-          <div style={{position: 'relative', minWidth: '200px'}}>
+          <div style={{position: 'relative', width: isMobile ? '100%' : '200px'}}>
             <button 
               className="adm-select"
               onClick={() => setShowEventDropdown(!showEventDropdown)}
@@ -320,10 +416,10 @@ function BookingsTab() {
           )}
 
           {/* Filtro de estado original */}
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select" style={{width: isMobile ? '100%' : 'auto'}}>
             <option value="all">Todos los estados</option>
             <option value="pending">Pendientes</option>
-            <option value="reserved">Reservadas (transferencia)</option>
+            <option value="reserved">Reservadas</option>
             <option value="confirmed">Confirmadas</option>
             <option value="rejected">Rechazadas</option>
           </select>
@@ -344,81 +440,108 @@ function BookingsTab() {
       )}
 
       {loading ? <div className="adm-loading">Cargando...</div> : (
-        <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead>
-              <tr>
-                <th style={{width: '40px'}}></th>
-                <th>Cliente</th>
-                <th>Evento</th>
-                <th>Cupos</th>
-                <th>Total</th>
-                <th>Método</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+        <>
+          {/* VISTA DESKTOP - TABLA */}
+          {!isMobile && (
+            <div className="adm-table-wrap">
+              <table className="adm-table">
+                <thead>
+                  <tr>
+                    <th style={{width: '40px'}}></th>
+                    <th>Cliente</th>
+                    <th>Evento</th>
+                    <th>Cupos</th>
+                    <th>Total</th>
+                    <th>Método</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookingsFiltrados.length === 0 && (
+                    <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
+                      {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
+                    </td></tr>
+                  )}
+                  {bookingsFiltrados.map(b => (
+                    <>
+                      <tr key={b.id}>
+                        <td>
+                          <button 
+                            onClick={() => toggleExpandBooking(b.id, b.event_id)}
+                            className="btn-expand"
+                            title="Ver/asignar pasajeros"
+                          >
+                            {expandedBookings.includes(b.id) ? '▼' : '▶'}
+                          </button>
+                        </td>
+                        <td>
+                          <div className="adm-cell-main">{b.customer_name}</div>
+                          <div className="adm-cell-sub">{b.customer_email}</div>
+                        </td>
+                        <td>{getNombreEvento(b.event_id)}</td>
+                        <td>{b.quantity}</td>
+                        <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
+                        <td>
+                          <span className="adm-method">
+                            {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
+                          </span>
+                        </td>
+                        <td><StatusBadge status={b.payment_status} /></td>
+                        <td>
+                          {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
+                            <div className="adm-actions">
+                              <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
+                                <Check size={14} />
+                              </button>
+                              <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                      
+                      {expandedBookings.includes(b.id) && (
+                        <tr className="expanded-row">
+                          <td colSpan={8}>
+                            <BookingPassengersManager 
+                              bookingId={b.id}
+                              eventId={b.event_id}
+                              vans={eventVans[b.event_id] || []}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* VISTA MÓVIL - CARDS */}
+          {isMobile && (
+            <div className="adm-booking-cards">
               {bookingsFiltrados.length === 0 && (
-                <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
+                <div style={{textAlign:'center', color:'var(--text-3)', padding:'32px 16px'}}>
                   {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
-                </td></tr>
+                </div>
               )}
               {bookingsFiltrados.map(b => (
-                <>
-                  <tr key={b.id}>
-                    <td>
-                      <button 
-                        onClick={() => toggleExpandBooking(b.id, b.event_id)}
-                        className="btn-expand"
-                        title="Ver/asignar pasajeros"
-                      >
-                        {expandedBookings.includes(b.id) ? '▼' : '▶'}
-                      </button>
-                    </td>
-                    <td>
-                      <div className="adm-cell-main">{b.customer_name}</div>
-                      <div className="adm-cell-sub">{b.customer_email}</div>
-                    </td>
-                    <td>{getNombreEvento(b.event_id)}</td>
-                    <td>{b.quantity}</td>
-                    <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
-                    <td>
-                      <span className="adm-method">
-                        {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
-                      </span>
-                    </td>
-                    <td><StatusBadge status={b.payment_status} /></td>
-                    <td>
-                      {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
-                        <div className="adm-actions">
-                          <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
-                            <Check size={14} />
-                          </button>
-                          <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
-                            <X size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  
-                  {expandedBookings.includes(b.id) && (
-                    <tr className="expanded-row">
-                      <td colSpan={8}>
-                        <BookingPassengersManager 
-                          bookingId={b.id}
-                          eventId={b.event_id}
-                          vans={eventVans[b.event_id] || []}
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </>
+                <BookingCard
+                  key={b.id}
+                  booking={b}
+                  eventName={getNombreEvento(b.event_id)}
+                  expanded={expandedBookings.includes(b.id)}
+                  onExpand={() => toggleExpandBooking(b.id, b.event_id)}
+                  onConfirm={() => confirm(b.id, true)}
+                  onReject={() => confirm(b.id, false)}
+                />
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -765,10 +888,27 @@ function VansTab() {
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const { user, logout } = useAuthStore()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
     <div className="adm">
-      <aside className="adm-sidebar">
+      {isMobile && (
+        <button 
+          className="adm-mobile-menu-btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <Menu size={24} />
+        </button>
+      )}
+
+      <aside className={`adm-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="adm-sidebar__logo">
           <span>🚐</span>
           <span>VanAlConcierto</span>
@@ -779,7 +919,10 @@ export default function AdminDashboard() {
             <button
               key={t.id}
               className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => {
+                setActiveTab(t.id)
+                setSidebarOpen(false)
+              }}
             >
               {t.label}
             </button>
