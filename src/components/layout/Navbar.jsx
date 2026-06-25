@@ -35,9 +35,6 @@ export default function Navbar() {
           <button onClick={() => scrollToSection('contacto')} className="navbar__link">
             Contacto
           </button>
-          <a href="https://vanalconcierto-front.vercel.app/admin" className="navbar__admin">
-            ADMIN
-          </a>
         </div>
 
         {/* Mobile Menu Button */}
@@ -61,9 +58,6 @@ export default function Navbar() {
           <button onClick={() => scrollToSection('contacto')} className="navbar__mobile-link">
             Contacto
           </button>
-          <a href="https://vanalconcierto-front.vercel.app/admin" className="navbar__mobile-admin">
-            ADMIN
-          </a>
         </div>
       )}
     </nav>
