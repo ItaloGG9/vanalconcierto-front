@@ -63,12 +63,6 @@ function ContactSection() {
             >
               💬 WhatsApp
             </a>
-            <a
-              href="mailto:hola@vanalconcierto.cl"
-              className="contact__btn contact__btn--email"
-            >
-              📧 Email
-            </a>
           </div>
         </div>
       </div>
