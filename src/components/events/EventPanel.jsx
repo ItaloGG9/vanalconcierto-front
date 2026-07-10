@@ -12,7 +12,7 @@ export default function EventPanel({ event, onClose }) {
   const [method, setMethod] = useState(null) // 'mercadopago' | 'transfer'
   const [step, setStep] = useState('info') // 'info' | 'form' | 'success'
   const [loading, setLoading] = useState(false)
-  const [notif, setNotif] = useState('email')
+  const [notif] = useState('email')
   const [transferResult, setTransferResult] = useState(null)
 
   // ← NUEVO: Estado para pasajeros
@@ -212,10 +212,6 @@ export default function EventPanel({ event, onClose }) {
                   className={`epanel__notif-opt ${notif === 'email' ? 'epanel__notif-opt--active' : ''}`}
                   onClick={() => setNotif('email')}
                 >📧 Email</button>
-                <button
-                  className={`epanel__notif-opt ${notif === 'whatsapp' ? 'epanel__notif-opt--active' : ''}`}
-                  onClick={() => setNotif('whatsapp')}
-                >💬 WhatsApp</button>
               </div>
             </div>
 
