@@ -8,7 +8,7 @@ export default function Footer() {
   <img 
     src="/van-al-concierto_logo-completo (1).svg" 
     alt="VanAlConcierto" 
-    style={{ width: '160px', height: 'auto' }} 
+    style={{ width: '50px', height: 'auto' }} 
   />
   <p>Tu van al concierto más cercano.</p>
 </div>
