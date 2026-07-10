@@ -20,7 +20,7 @@ export default function Navbar() {
       <div className="navbar__container">
         {/* Logo */}
         <a href="/" className="navbar__logo">
-          <img src="/logo.svg" alt="VanAlConcierto" className="navbar__logo-img" />
+          <img src="/van-al-concierto_logo-completo (1).svg" alt="VanAlConcierto" className="navbar__logo-img" />
           <span className="navbar__logo-text">VANALCONCIERTO</span>
         </a>
 
