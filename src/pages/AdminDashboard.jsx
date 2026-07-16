@@ -14,48 +14,48 @@ import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu } from 'lucide-re
 import BookingPassengersManager from '../components/BookingPassengersManager'
 import './AdminDashboard.css'
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'bookings', label: '📦 Reservas' },
   { id: 'events',   label: '🎵 Eventos' },
   { id: 'vans',     label: '🚐 Vans' },
 ]
 
-// ── Booking status badge ──────────────────────────────────────────────────────
+const GENRES = [
+  { id: 'otro',        label: '🎼 Otro' },
+  { id: 'reggaeton',   label: '🔥 Reggaetón' },
+  { id: 'rock',        label: '🎸 Rock' },
+  { id: 'pop',         label: '🎤 Pop' },
+  { id: 'electronica', label: '🎧 Electrónica' },
+  { id: 'cumbia',      label: '🪗 Cumbia' },
+  { id: 'hip-hop',     label: '🎙️ Hip-Hop' },
+  { id: 'latin',       label: '💃 Latin' },
+]
+
 function StatusBadge({ status }) {
   const map = {
-    pending:   { label: 'Pendiente',  color: '#f5c518' },
-    reserved:  { label: 'Reservado',  color: '#ff6b35' },
-    confirmed: { label: 'Confirmado', color: '#22c55e' },
-    rejected:  { label: 'Rechazado',  color: '#ef4444' },
-    refunded:  { label: 'Reembolsado',color: '#8b5cf6' },
+    pending:   { label: 'Pendiente',   color: '#f5c518' },
+    reserved:  { label: 'Reservado',   color: '#ff6b35' },
+    confirmed: { label: 'Confirmado',  color: '#22c55e' },
+    rejected:  { label: 'Rechazado',   color: '#ef4444' },
+    refunded:  { label: 'Reembolsado', color: '#8b5cf6' },
   }
   const s = map[status] || { label: status, color: '#9090a8' }
-  return (
-    <span className="status-badge" style={{ '--sc': s.color }}>
-      {s.label}
-    </span>
-  )
+  return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
-// ── ASSIGN VAN MODAL ──────────────────────────────────────────────────────────
 function AssignVanModal({ event, onClose, onAssigned }) {
   const [vans, setVans] = useState([])
   const [assignedVans, setAssignedVans] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      adminGetVans(),
-      adminGetEventVans(event.id)
-    ]).then(([vansRes, assignedRes]) => {
-      setVans(vansRes.data)
-      setAssignedVans(assignedRes.data.map(v => v.id))
-    }).catch(() => {
-      toast.error('Error cargando vans')
-    }).finally(() => {
-      setLoading(false)
-    })
+    Promise.all([adminGetVans(), adminGetEventVans(event.id)])
+      .then(([vansRes, assignedRes]) => {
+        setVans(vansRes.data)
+        setAssignedVans(assignedRes.data.map(v => v.id))
+      })
+      .catch(() => toast.error('Error cargando vans'))
+      .finally(() => setLoading(false))
   }, [event.id])
 
   const handleAssign = async (vanId) => {
@@ -71,9 +71,13 @@ function AssignVanModal({ event, onClose, onAssigned }) {
 
   const handleUnassign = async (vanId) => {
     try {
-      await adminUnassignVan(event.id, vanId)
+      const res = await adminUnassignVan(event.id, vanId)
       setAssignedVans(assignedVans.filter(id => id !== vanId))
       toast.success('Van desasignada')
+      // ← Mostrar advertencia si quedan cupos negativos
+      if (res.data?.warning) {
+        toast.error(res.data.warning, { duration: 6000 })
+      }
       onAssigned()
     } catch (e) {
       toast.error('Error desasignando van')
@@ -86,29 +90,20 @@ function AssignVanModal({ event, onClose, onAssigned }) {
         <div className="modal-header">
           <h3>Asignar vans al evento</h3>
           <p className="modal-subtitle">{event.title}</p>
-          <button className="modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-
         <div className="modal-body">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              Cargando vans...
-            </div>
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>Cargando vans...</div>
           ) : vans.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>
-              No hay vans registradas. Créalas primero en la pestaña Vans.
-            </div>
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>No hay vans registradas.</div>
           ) : (
             <div className="drivers-assign-list">
               {vans.map(van => {
                 const isAssigned = assignedVans.includes(van.id)
                 return (
                   <div key={van.id} className="driver-assign-item">
-                    <div className="driver-assign-avatar">
-                      <span>🚐</span>
-                    </div>
+                    <div className="driver-assign-avatar"><span>🚐</span></div>
                     <div className="driver-assign-info">
                       <div className="adm-cell-main">{van.name}</div>
                       <div className="adm-cell-sub">
@@ -121,11 +116,7 @@ function AssignVanModal({ event, onClose, onAssigned }) {
                       className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`}
                       onClick={() => isAssigned ? handleUnassign(van.id) : handleAssign(van.id)}
                     >
-                      {isAssigned ? (
-                        <><X size={14} /> Quitar</>
-                      ) : (
-                        <><Check size={14} /> Asignar</>
-                      )}
+                      {isAssigned ? <><X size={14} /> Quitar</> : <><Check size={14} /> Asignar</>}
                     </button>
                   </div>
                 )
@@ -138,11 +129,9 @@ function AssignVanModal({ event, onClose, onAssigned }) {
   )
 }
 
-// ── BOOKING CARD PARA MÓVIL ──────────────────────────────────────────────────
 function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject }) {
   return (
     <div className="adm-booking-card">
-      {/* Encabezado con cliente y estado */}
       <div className="adm-booking-card-header">
         <div style={{ flex: 1 }}>
           <div className="adm-cell-main">{booking.customer_name}</div>
@@ -150,14 +139,10 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         </div>
         <StatusBadge status={booking.payment_status} />
       </div>
-
-      {/* Fila: Evento */}
       <div className="adm-booking-card-row">
         <span className="adm-booking-card-label">Evento</span>
         <span className="adm-booking-card-value">{eventName}</span>
       </div>
-
-      {/* Fila: Cupos y Total */}
       <div style={{ display: 'flex', gap: '16px' }}>
         <div style={{ flex: 1 }}>
           <span className="adm-booking-card-label">Cupos</span>
@@ -168,66 +153,32 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
           <div className="adm-booking-card-value">${Number(booking.total_price).toLocaleString('es-CL')}</div>
         </div>
       </div>
-
-      {/* Fila: Método */}
       <div className="adm-booking-card-row">
         <span className="adm-booking-card-label">Método</span>
         <span className="adm-method">
           {booking.payment_method === 'mercadopago' ? '💳 Mercado Pago' : '🏦 Transferencia'}
         </span>
       </div>
-
-      {/* Botones de acción */}
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <button 
-          className="adm-btn adm-btn--ghost"
-          onClick={() => onExpand()}
-          style={{ flex: 1 }}
-        >
+        <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
           {expanded ? '▼ Ocultar' : '▶ Pasajeros'}
         </button>
         {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
           <>
-            <button 
-              className="adm-btn adm-btn--success"
-              onClick={() => onConfirm()}
-              title="Confirmar"
-            >
-              <Check size={14} />
-            </button>
-            <button 
-              className="adm-btn adm-btn--danger"
-              onClick={() => onReject()}
-              title="Rechazar"
-            >
-              <X size={14} />
-            </button>
+            <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
+            <button className="adm-btn adm-btn--danger" onClick={() => onReject()} title="Rechazar"><X size={14} /></button>
           </>
         )}
       </div>
-
-      {/* Contenido expandido */}
       {expanded && (
-        <div style={{
-          marginTop: '12px',
-          paddingTop: '12px',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg-2)',
-          padding: '12px',
-          borderRadius: '8px'
-        }}>
-          <BookingPassengersManager 
-            bookingId={booking.id}
-            eventId={booking.event_id}
-            vans={[]}
-          />
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', background: 'var(--bg-2)', padding: '12px', borderRadius: '8px' }}>
+          <BookingPassengersManager bookingId={booking.id} eventId={booking.event_id} vans={[]} />
         </div>
       )}
     </div>
   )
 }
 
-// ── BOOKINGS TAB CON FILTRO DE EVENTOS ────────────────────────────────────────
 function BookingsTab() {
   const [bookings, setBookings] = useState([])
   const [events, setEvents] = useState([])
@@ -254,9 +205,7 @@ function BookingsTab() {
   }
 
   useEffect(() => {
-    getEvents(false)
-      .then(r => setEvents(r.data))
-      .catch(() => console.error('Error cargando eventos'))
+    getEvents(false).then(r => setEvents(r.data)).catch(() => {})
   }, [])
 
   useEffect(load, [filter])
@@ -271,151 +220,52 @@ function BookingsTab() {
 
   const loadEventVans = async (eventId) => {
     if (eventVans[eventId]) return
-    
     try {
       const res = await adminGetEventVans(eventId)
       setEventVans(prev => ({...prev, [eventId]: res.data}))
-    } catch (err) {
-      console.error('Error cargando vans:', err)
-    }
+    } catch {}
   }
 
   const toggleExpandBooking = async (bookingId, eventId) => {
     const isExpanding = !expandedBookings.includes(bookingId)
-    
-    setExpandedBookings(prev => 
-      prev.includes(bookingId) 
-        ? prev.filter(id => id !== bookingId)
-        : [...prev, bookingId]
-    )
-    
-    if (isExpanding) {
-      await loadEventVans(eventId)
-    }
+    setExpandedBookings(prev => prev.includes(bookingId) ? prev.filter(id => id !== bookingId) : [...prev, bookingId])
+    if (isExpanding) await loadEventVans(eventId)
   }
 
-  const bookingsFiltrados = selectedEventId 
-    ? bookings.filter(b => b.event_id === selectedEventId)
-    : bookings
-
-  const getNombreEvento = (eventId) => {
-    return events.find(e => e.id === eventId)?.title || 'Evento desconocido'
-  }
-
-  const eventoSeleccionado = selectedEventId 
-    ? events.find(e => e.id === selectedEventId)?.title 
-    : 'Todos los eventos'
+  const bookingsFiltrados = selectedEventId ? bookings.filter(b => b.event_id === selectedEventId) : bookings
+  const getNombreEvento = (eventId) => events.find(e => e.id === eventId)?.title || 'Evento desconocido'
+  const eventoSeleccionado = selectedEventId ? events.find(e => e.id === selectedEventId)?.title : 'Todos los eventos'
 
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Reservas</h2>
         <div className="adm-filters-container">
-          {/* FILTRO POR EVENTO */}
           <div style={{position: 'relative', width: isMobile ? '100%' : '200px'}}>
-            <button 
-              className="adm-select"
-              onClick={() => setShowEventDropdown(!showEventDropdown)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                cursor: 'pointer'
-              }}
-            >
+            <button className="adm-select" onClick={() => setShowEventDropdown(!showEventDropdown)} style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>
               <span>{eventoSeleccionado}</span>
-              <span style={{transform: showEventDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s'}}>
-                ▼
-              </span>
+              <span style={{transform: showEventDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s'}}>▼</span>
             </button>
-
-            {/* Dropdown menu */}
             {showEventDropdown && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                marginTop: '4px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                maxHeight: '300px',
-                overflowY: 'auto'
-              }}>
-                {/* Opción: Todos */}
-                <div
-                  onClick={() => {
-                    setSelectedEventId(null)
-                    setShowEventDropdown(false)
-                  }}
-                  style={{
-                    padding: '10px 16px',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid var(--border)',
-                    background: selectedEventId === null ? 'rgba(245, 197, 24, 0.1)' : 'transparent',
-                    color: selectedEventId === null ? 'var(--accent)' : 'var(--text)',
-                    fontWeight: selectedEventId === null ? '600' : '400',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = 'var(--bg-2)'}
-                  onMouseLeave={(e) => e.target.style.background = selectedEventId === null ? 'rgba(245, 197, 24, 0.1)' : 'transparent'}
-                >
+              <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,marginTop:'4px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 4px 12px rgba(0,0,0,0.15)',maxHeight:'300px',overflowY:'auto'}}>
+                <div onClick={() => { setSelectedEventId(null); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:selectedEventId===null?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===null?'var(--accent)':'var(--text)',fontWeight:selectedEventId===null?'600':'400'}}>
                   📋 Todos ({bookings.length})
                 </div>
-
-                {/* Opciones de eventos */}
                 {events.map(evento => {
-                  const numReservasEvento = bookings.filter(b => b.event_id === evento.id).length
+                  const num = bookings.filter(b => b.event_id === evento.id).length
                   return (
-                    <div
-                      key={evento.id}
-                      onClick={() => {
-                        setSelectedEventId(evento.id)
-                        setShowEventDropdown(false)
-                      }}
-                      style={{
-                        padding: '10px 16px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        background: selectedEventId === evento.id ? 'rgba(245, 197, 24, 0.1)' : 'transparent',
-                        color: selectedEventId === evento.id ? 'var(--accent)' : 'var(--text)',
-                        fontWeight: selectedEventId === evento.id ? '600' : '400',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-2)'}
-                      onMouseLeave={(e) => e.target.style.background = selectedEventId === evento.id ? 'rgba(245, 197, 24, 0.1)' : 'transparent'}
-                    >
+                    <div key={evento.id} onClick={() => { setSelectedEventId(evento.id); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',background:selectedEventId===evento.id?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===evento.id?'var(--accent)':'var(--text)',fontWeight:selectedEventId===evento.id?'600':'400'}}>
                       <span>{evento.title}</span>
-                      <span style={{fontSize: '12px', background: 'var(--bg-2)', padding: '2px 6px', borderRadius: '3px'}}>
-                        {numReservasEvento}
-                      </span>
+                      <span style={{fontSize:'12px',background:'var(--bg-2)',padding:'2px 6px',borderRadius:'3px'}}>{num}</span>
                     </div>
                   )
                 })}
               </div>
             )}
           </div>
-
-          {/* Botón limpiar filtro */}
           {selectedEventId && (
-            <button 
-              className="adm-btn adm-btn--ghost"
-              onClick={() => setSelectedEventId(null)}
-              title="Mostrar todas las reservas"
-              style={{padding: '6px 10px'}}
-            >
-              ✕ Limpiar
-            </button>
+            <button className="adm-btn adm-btn--ghost" onClick={() => setSelectedEventId(null)} style={{padding:'6px 10px'}}>✕ Limpiar</button>
           )}
-
-          {/* Filtro de estado original */}
           <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select" style={{width: isMobile ? '100%' : 'auto'}}>
             <option value="all">Todos los estados</option>
             <option value="pending">Pendientes</option>
@@ -426,90 +276,52 @@ function BookingsTab() {
         </div>
       </div>
 
-      {/* Mostrar cuántas reservas se están viendo */}
       {selectedEventId && (
-        <div style={{
-          fontSize: '13px',
-          color: 'var(--text-3)',
-          padding: '8px 0',
-          borderBottom: '1px solid var(--border)',
-          marginBottom: '12px'
-        }}>
+        <div style={{fontSize:'13px',color:'var(--text-3)',padding:'8px 0',borderBottom:'1px solid var(--border)',marginBottom:'12px'}}>
           Mostrando {bookingsFiltrados.length} de {bookings.length} reservas
         </div>
       )}
 
       {loading ? <div className="adm-loading">Cargando...</div> : (
         <>
-          {/* VISTA DESKTOP - TABLA */}
           {!isMobile && (
             <div className="adm-table-wrap">
               <table className="adm-table">
                 <thead>
                   <tr>
-                    <th style={{width: '40px'}}></th>
-                    <th>Cliente</th>
-                    <th>Evento</th>
-                    <th>Cupos</th>
-                    <th>Total</th>
-                    <th>Método</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th style={{width:'40px'}}></th>
+                    <th>Cliente</th><th>Evento</th><th>Cupos</th><th>Total</th><th>Método</th><th>Estado</th><th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bookingsFiltrados.length === 0 && (
-                    <tr><td colSpan={8} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
+                    <tr><td colSpan={8} style={{textAlign:'center',color:'var(--text-3)',padding:32}}>
                       {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
                     </td></tr>
                   )}
                   {bookingsFiltrados.map(b => (
                     <>
                       <tr key={b.id}>
-                        <td>
-                          <button 
-                            onClick={() => toggleExpandBooking(b.id, b.event_id)}
-                            className="btn-expand"
-                            title="Ver/asignar pasajeros"
-                          >
-                            {expandedBookings.includes(b.id) ? '▼' : '▶'}
-                          </button>
-                        </td>
-                        <td>
-                          <div className="adm-cell-main">{b.customer_name}</div>
-                          <div className="adm-cell-sub">{b.customer_email}</div>
-                        </td>
+                        <td><button onClick={() => toggleExpandBooking(b.id, b.event_id)} className="btn-expand">{expandedBookings.includes(b.id) ? '▼' : '▶'}</button></td>
+                        <td><div className="adm-cell-main">{b.customer_name}</div><div className="adm-cell-sub">{b.customer_email}</div></td>
                         <td>{getNombreEvento(b.event_id)}</td>
                         <td>{b.quantity}</td>
                         <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
-                        <td>
-                          <span className="adm-method">
-                            {b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}
-                          </span>
-                        </td>
+                        <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}</span></td>
                         <td><StatusBadge status={b.payment_status} /></td>
                         <td>
                           {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
                             <div className="adm-actions">
-                              <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar">
-                                <Check size={14} />
-                              </button>
-                              <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar">
-                                <X size={14} />
-                              </button>
+                              <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
+                              <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
                             </div>
                           )}
                         </td>
                       </tr>
-                      
                       {expandedBookings.includes(b.id) && (
                         <tr className="expanded-row">
                           <td colSpan={8}>
-                            <BookingPassengersManager 
-                              bookingId={b.id}
-                              eventId={b.event_id}
-                              vans={eventVans[b.event_id] || []}
-                            />
+                            <BookingPassengersManager bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
                           </td>
                         </tr>
                       )}
@@ -519,20 +331,15 @@ function BookingsTab() {
               </table>
             </div>
           )}
-
-          {/* VISTA MÓVIL - CARDS */}
           {isMobile && (
             <div className="adm-booking-cards">
               {bookingsFiltrados.length === 0 && (
-                <div style={{textAlign:'center', color:'var(--text-3)', padding:'32px 16px'}}>
+                <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px 16px'}}>
                   {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
                 </div>
               )}
               {bookingsFiltrados.map(b => (
-                <BookingCard
-                  key={b.id}
-                  booking={b}
-                  eventName={getNombreEvento(b.event_id)}
+                <BookingCard key={b.id} booking={b} eventName={getNombreEvento(b.event_id)}
                   expanded={expandedBookings.includes(b.id)}
                   onExpand={() => toggleExpandBooking(b.id, b.event_id)}
                   onConfirm={() => confirm(b.id, true)}
@@ -547,14 +354,14 @@ function BookingsTab() {
   )
 }
 
-// ── EVENTS TAB ────────────────────────────────────────────────────────────────
 function EventsTab() {
   const [events, setEvents] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
     title: '', description: '', pickup_info: '', event_date: '',
-    price: '', original_price: '', total_capacity: '', is_round_trip: true, is_active: true
+    price: '', original_price: '', total_capacity: '',
+    is_round_trip: true, is_active: true, genre: 'otro'  // ← genre agregado
   })
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -566,10 +373,7 @@ function EventsTab() {
       setEvents(r.data)
       r.data.forEach(event => {
         adminGetEventVans(event.id).then(res => {
-          setEventVans(prev => ({
-            ...prev,
-            [event.id]: res.data
-          }))
+          setEventVans(prev => ({ ...prev, [event.id]: res.data }))
         }).catch(() => {})
       })
     }).catch(() => {})
@@ -579,7 +383,7 @@ function EventsTab() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ title:'', description:'', pickup_info:'', event_date:'', price:'', original_price:'', total_capacity:'', is_round_trip:true, is_active:true })
+    setForm({ title:'', description:'', pickup_info:'', event_date:'', price:'', original_price:'', total_capacity:'', is_round_trip:true, is_active:true, genre:'otro' })
     setShowForm(true)
   }
 
@@ -594,7 +398,8 @@ function EventsTab() {
       original_price: ev.original_price || '',
       total_capacity: ev.total_capacity,
       is_round_trip: ev.is_round_trip,
-      is_active: ev.is_active
+      is_active: ev.is_active,
+      genre: ev.genre || 'otro'  // ← genre en edición
     })
     setShowForm(true)
   }
@@ -611,7 +416,8 @@ function EventsTab() {
         price: parseFloat(form.price),
         original_price: form.original_price ? parseFloat(form.original_price) : null,
         total_capacity: parseInt(form.total_capacity),
-        event_date: new Date(form.event_date).toISOString()
+        event_date: new Date(form.event_date).toISOString(),
+        genre: form.genre  // ← genre en payload
       }
       let eventId = editing?.id
       if (editing) {
@@ -644,9 +450,7 @@ function EventsTab() {
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Eventos</h2>
-        <button className="adm-btn adm-btn--primary" onClick={openNew}>
-          <Plus size={14} /> Nuevo evento
-        </button>
+        <button className="adm-btn adm-btn--primary" onClick={openNew}><Plus size={14} /> Nuevo evento</button>
       </div>
 
       {showForm && (
@@ -673,6 +477,17 @@ function EventsTab() {
               <label>Precio original</label>
               <input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" />
             </div>
+
+            {/* ← GÉNERO MUSICAL */}
+            <div className="adm-field">
+              <label>Género Musical</label>
+              <select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>
+                {GENRES.map(g => (
+                  <option key={g.id} value={g.id}>{g.label}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="adm-field adm-field--full">
               <label>Puntos de recogida</label>
               <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00" />
@@ -718,12 +533,10 @@ function EventsTab() {
                 <div className="adm-cell-main">{ev.title}</div>
                 <div className="adm-cell-sub">
                   {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles
+                  {ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}
                 </div>
                 {vans.length > 0 && (
-                  <div className="adm-event-drivers">
-                    <Users size={12} />
-                    {vans.map(v => v.name).join(', ')}
-                  </div>
+                  <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>
                 )}
               </div>
               <div className="adm-event-status">
@@ -733,13 +546,7 @@ function EventsTab() {
                 }
               </div>
               <div className="adm-actions">
-                <button 
-                  className="adm-btn adm-btn--primary" 
-                  onClick={() => setAssigningEvent(ev)}
-                  title="Asignar vans"
-                >
-                  <UserPlus size={14} />
-                </button>
+                <button className="adm-btn adm-btn--primary" onClick={() => setAssigningEvent(ev)} title="Asignar vans"><UserPlus size={14} /></button>
                 <button className="adm-btn adm-btn--ghost" onClick={() => openEdit(ev)}>Editar</button>
                 <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
               </div>
@@ -749,25 +556,16 @@ function EventsTab() {
       </div>
 
       {assigningEvent && (
-        <AssignVanModal
-          event={assigningEvent}
-          onClose={() => setAssigningEvent(null)}
-          onAssigned={() => load()}
-        />
+        <AssignVanModal event={assigningEvent} onClose={() => setAssigningEvent(null)} onAssigned={() => load()} />
       )}
     </div>
   )
 }
 
-// ── VANS TAB ──────────────────────────────────────────────────────────────────
 function VansTab() {
   const [vans, setVans] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ 
-    name:'', license_plate:'', capacity:17, 
-    owner_email:'', password:'', 
-    current_driver_name:'', current_driver_phone:'' 
-  })
+  const [form, setForm] = useState({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' })
   const [saving, setSaving] = useState(false)
 
   const load = () => adminGetVans().then(r => setVans(r.data)).catch(() => {})
@@ -805,49 +603,24 @@ function VansTab() {
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Vans</h2>
-        <button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={14} /> Nueva van
-        </button>
+        <button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}><Plus size={14} /> Nueva van</button>
       </div>
 
       {showForm && (
         <div className="adm-form-card">
           <h3>Registrar van</h3>
           <div className="adm-form-grid">
-            <div className="adm-field">
-              <label>Nombre *</label>
-              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Van 1" />
-            </div>
-            <div className="adm-field">
-              <label>Patente</label>
-              <input value={form.license_plate} onChange={e => setForm({...form, license_plate: e.target.value})} placeholder="BBDD-12" />
-            </div>
-            <div className="adm-field">
-              <label>Capacidad</label>
-              <input type="number" value={form.capacity} onChange={e => setForm({...form, capacity: parseInt(e.target.value)})} />
-            </div>
-            <div className="adm-field">
-              <label>Email (para login PWA) *</label>
-              <input type="email" value={form.owner_email} onChange={e => setForm({...form, owner_email: e.target.value})} placeholder="van1@email.com" />
-            </div>
-            <div className="adm-field">
-              <label>Contraseña *</label>
-              <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Mínimo 6 caracteres" />
-            </div>
-            <div className="adm-field">
-              <label>Conductor actual</label>
-              <input value={form.current_driver_name} onChange={e => setForm({...form, current_driver_name: e.target.value})} placeholder="Juan Pérez" />
-            </div>
-            <div className="adm-field">
-              <label>Teléfono conductor</label>
-              <input value={form.current_driver_phone} onChange={e => setForm({...form, current_driver_phone: e.target.value})} placeholder="+56912345678" />
-            </div>
+            <div className="adm-field"><label>Nombre *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Van 1" /></div>
+            <div className="adm-field"><label>Patente</label><input value={form.license_plate} onChange={e => setForm({...form, license_plate: e.target.value})} placeholder="BBDD-12" /></div>
+            <div className="adm-field"><label>Capacidad</label><input type="number" value={form.capacity} onChange={e => setForm({...form, capacity: parseInt(e.target.value)})} /></div>
+            <div className="adm-field"><label>Email (para login PWA) *</label><input type="email" value={form.owner_email} onChange={e => setForm({...form, owner_email: e.target.value})} placeholder="van1@email.com" /></div>
+            <div className="adm-field"><label>Contraseña *</label><input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Mínimo 6 caracteres" /></div>
+            <div className="adm-field"><label>Conductor actual</label><input value={form.current_driver_name} onChange={e => setForm({...form, current_driver_name: e.target.value})} placeholder="Juan Pérez" /></div>
+            <div className="adm-field"><label>Teléfono conductor</label><input value={form.current_driver_phone} onChange={e => setForm({...form, current_driver_phone: e.target.value})} placeholder="+56912345678" /></div>
           </div>
           <div className="adm-form-actions">
             <button className="adm-btn adm-btn--ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
-              {saving ? 'Guardando...' : 'Crear van'}
-            </button>
+            <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Crear van'}</button>
           </div>
         </div>
       )}
@@ -855,27 +628,17 @@ function VansTab() {
       <div className="adm-drivers-list">
         {vans.map(v => (
           <div key={v.id} className="adm-driver-row">
-            <div className="adm-driver-avatar">
-              <span>🚐</span>
-            </div>
+            <div className="adm-driver-avatar"><span>🚐</span></div>
             <div className="adm-driver-info">
               <div className="adm-cell-main">{v.name}</div>
               <div className="adm-cell-sub">
-                {v.license_plate && `📋 ${v.license_plate} · `}
-                {v.capacity} pasajeros
+                {v.license_plate && `📋 ${v.license_plate} · `}{v.capacity} pasajeros
                 {v.current_driver_name && ` · 🧑‍✈️ ${v.current_driver_name}`}
               </div>
             </div>
-            <div>
-              {v.is_active
-                ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activa</span>
-                : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactiva</span>
-              }
-            </div>
+            <div>{v.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activa</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactiva</span>}</div>
             <div className="adm-actions">
-              <button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}>
-                <Trash2 size={14} />
-              </button>
+              <button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -884,7 +647,6 @@ function VansTab() {
   )
 }
 
-// ── MAIN DASHBOARD ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const { user, logout } = useAuthStore()
@@ -900,46 +662,25 @@ export default function AdminDashboard() {
   return (
     <div className="adm">
       {isMobile && (
-        <button 
-          className="adm-mobile-menu-btn"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <Menu size={24} />
-        </button>
+        <button className="adm-mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu size={24} /></button>
       )}
-
       <aside className={`adm-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="adm-sidebar__logo">
-          <span>🚐</span>
-          <span>VanAlConcierto</span>
-        </div>
-
+        <div className="adm-sidebar__logo"><span>🚐</span><span>VanAlConcierto</span></div>
         <nav className="adm-sidebar__nav">
           {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`}
-              onClick={() => {
-                setActiveTab(t.id)
-                setSidebarOpen(false)
-              }}
-            >
+            <button key={t.id} className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`} onClick={() => { setActiveTab(t.id); setSidebarOpen(false) }}>
               {t.label}
             </button>
           ))}
         </nav>
-
         <div className="adm-sidebar__footer">
           <div className="adm-sidebar__user">
             <span className="adm-sidebar__user-name">{user?.full_name}</span>
             <span className="adm-sidebar__user-role">Admin</span>
           </div>
-          <button className="adm-sidebar__logout" onClick={logout} title="Cerrar sesión">
-            <LogOut size={16} />
-          </button>
+          <button className="adm-sidebar__logout" onClick={logout} title="Cerrar sesión"><LogOut size={16} /></button>
         </div>
       </aside>
-
       <main className="adm-main">
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'events'   && <EventsTab />}
