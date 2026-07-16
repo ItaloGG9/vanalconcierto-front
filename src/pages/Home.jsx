@@ -60,21 +60,16 @@ function ContactSection() {
 }
 
 const GENRES = [
-  { id: 'all',        label: '🎵 Todos' },
-  { id: 'reggaeton',  label: '🔥 Reggaetón' },
-  { id: 'rock',       label: '🎸 Rock' },
-  { id: 'pop',        label: '🎤 Pop' },
-  { id: 'electronica',label: '🎧 Electrónica' },
-  { id: 'cumbia',     label: '🪗 Cumbia' },
-  { id: 'hip-hop',    label: '🎙️ Hip-Hop' },
-  { id: 'latin',      label: '💃 Latin' },
-  { id: 'otro',       label: '🎼 Otro' },
+  { id: 'all',         label: '🎵 Todos' },
+  { id: 'reggaeton',   label: '🔥 Reggaetón' },
+  { id: 'rock',        label: '🎸 Rock' },
+  { id: 'pop',         label: '🎤 Pop' },
+  { id: 'electronica', label: '🎧 Electrónica' },
+  { id: 'cumbia',      label: '🪗 Cumbia' },
+  { id: 'hip-hop',     label: '🎙️ Hip-Hop' },
+  { id: 'latin',       label: '💃 Latin' },
+  { id: 'otro',        label: '🎼 Otro' },
 ]
-
-function splitIntoRows(arr) {
-  const mid = Math.ceil(arr.length / 2)
-  return [arr.slice(0, mid), arr.slice(mid)]
-}
 
 export default function Home() {
   const [events, setEvents] = useState([])
@@ -91,13 +86,10 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Filtrar por género + búsqueda + ordenar por fecha más próxima
   const filteredEvents = events
     .filter(e => activeGenre === 'all' || e.genre === activeGenre)
     .filter(e => !search || e.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
-
-  const [row1, row2] = splitIntoRows(filteredEvents)
 
   return (
     <main>
@@ -141,52 +133,42 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Loading */}
           {loading ? (
-            <div className="events-rows">
-              <div className="events-row">
-                {[1,2,3].map(i => (
-                  <div key={i} className="ecard-skeleton" style={{width: 280, flexShrink: 0}}>
-                    <div className="skeleton" style={{aspectRatio:'16/9'}} />
-                    <div style={{padding:'20px', display:'flex', flexDirection:'column', gap:'12px'}}>
-                      <div className="skeleton" style={{height:'26px', width:'70%'}} />
-                      <div className="skeleton" style={{height:'14px', width:'50%'}} />
-                      <div className="skeleton" style={{height:'40px', marginTop:'8px'}} />
-                    </div>
+            <div className="events-scroll-container">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="ecard-skeleton">
+                  <div className="skeleton" style={{aspectRatio:'16/9'}} />
+                  <div style={{padding:'20px', display:'flex', flexDirection:'column', gap:'12px'}}>
+                    <div className="skeleton" style={{height:'26px', width:'70%'}} />
+                    <div className="skeleton" style={{height:'14px', width:'50%'}} />
+                    <div className="skeleton" style={{height:'40px', marginTop:'8px'}} />
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="events-empty">
               <span>🎵</span>
               <p>
-                {search ? `No se encontraron eventos para "${search}"` 
+                {search ? `No se encontraron eventos para "${search}"`
                   : activeGenre !== 'all' ? 'No hay eventos para este género'
                   : 'No hay eventos disponibles por ahora.'}
                 <br />¡Vuelve pronto!
               </p>
             </div>
           ) : (
-            <div className="events-rows">
-              {/* Fila 1 */}
-              <div className="events-row">
-                {row1.map((event, i) => (
-                  <div key={event.id} className={`events-row__item ${inView ? 'events-grid__item--visible' : ''}`} style={{ animationDelay: `${i * 0.08}s` }}>
-                    <EventCard event={event} onClick={setSelected} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Fila 2 */}
-              {row2.length > 0 && (
-                <div className="events-row">
-                  {row2.map((event, i) => (
-                    <div key={event.id} className={`events-row__item ${inView ? 'events-grid__item--visible' : ''}`} style={{ animationDelay: `${(i + row1.length) * 0.08}s` }}>
-                      <EventCard event={event} onClick={setSelected} />
-                    </div>
-                  ))}
+            /* Grid 4 columnas con scroll interno vertical */
+            <div className="events-scroll-container">
+              {filteredEvents.map((event, i) => (
+                <div
+                  key={event.id}
+                  className={`events-grid__item ${inView ? 'events-grid__item--visible' : ''}`}
+                  style={{ animationDelay: `${i * 0.08}s` }}
+                >
+                  <EventCard event={event} onClick={setSelected} />
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>

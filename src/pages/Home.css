@@ -37,12 +37,6 @@
   color: var(--text-2);
 }
 
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-}
-
 .events-grid__item {
   opacity: 0;
   transform: translateY(24px);
@@ -135,28 +129,23 @@
   font-weight: 700;
 }
 
-/* ── Filas con scroll horizontal ───────────────────────────────────────────── */
-.events-rows {
-  display: flex;
-  flex-direction: column;
+/* ── Grid 4 columnas con scroll interno vertical ───────────────────────────── */
+.events-scroll-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-}
-
-.events-row {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 12px;
+  max-height: 900px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 184, 0, 0.3) transparent;
 }
-.events-row::-webkit-scrollbar { height: 4px; }
-.events-row::-webkit-scrollbar-track { background: transparent; }
-.events-row::-webkit-scrollbar-thumb { background: rgba(255, 184, 0, 0.3); border-radius: 2px; }
-
-.events-row__item {
-  flex-shrink: 0;
-  width: 280px;
+.events-scroll-container::-webkit-scrollbar { width: 4px; }
+.events-scroll-container::-webkit-scrollbar-track { background: transparent; }
+.events-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 184, 0, 0.3);
+  border-radius: 2px;
 }
 
 /* How it works */
@@ -194,7 +183,6 @@
   letter-spacing: 0.02em;
 }
 
-/* ← ÚNICO .how__steps — 4 columnas en desktop */
 .how__steps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -261,16 +249,20 @@
 .contact__btn--email:hover { border-color: var(--border-2); transform: translateY(-2px); }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .events-scroll-container { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (max-width: 900px) {
   .how__steps { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
   .contact__inner { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
-  .events-grid { grid-template-columns: 1fr; }
-  .events-row__item { width: 240px; }
+  .events-scroll-container { grid-template-columns: repeat(2, 1fr); max-height: 600px; }
 }
 
 @media (max-width: 480px) {
   .how__steps { grid-template-columns: 1fr; }
+  .events-scroll-container { grid-template-columns: 1fr; max-height: 500px; }
 }
