@@ -71,12 +71,15 @@ const GENRES = [
   { id: 'otro',        label: '🎼 Otro' },
 ]
 
+const EVENTS_PER_PAGE = 12
+
 export default function Home() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [activeGenre, setActiveGenre] = useState('all')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const { ref: eventsRef, inView } = useInView({ triggerOnce: true, threshold: 0.05 })
 
   useEffect(() => {
@@ -86,10 +89,20 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Reset página al cambiar filtros
+  useEffect(() => { setPage(1) }, [activeGenre, search])
+
   const filteredEvents = events
     .filter(e => activeGenre === 'all' || e.genre === activeGenre)
     .filter(e => !search || e.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
+
+  const totalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE)
+  const pageEvents = filteredEvents.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE)
+
+  const scrollToEvents = () => {
+    document.getElementById('eventos')?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   return (
     <main>
@@ -133,16 +146,23 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Loading */}
+          {/* Contador */}
+          {!loading && filteredEvents.length > 0 && (
+            <div className="events-count">
+              Mostrando {(page - 1) * EVENTS_PER_PAGE + 1}–{Math.min(page * EVENTS_PER_PAGE, filteredEvents.length)} de {filteredEvents.length} eventos
+            </div>
+          )}
+
+          {/* Grid de eventos */}
           {loading ? (
             <div className="events-scroll-container">
-              {[1,2,3,4].map(i => (
+              {[1,2,3,4,5,6,7,8].map(i => (
                 <div key={i} className="ecard-skeleton">
                   <div className="skeleton" style={{aspectRatio:'16/9'}} />
-                  <div style={{padding:'20px', display:'flex', flexDirection:'column', gap:'12px'}}>
-                    <div className="skeleton" style={{height:'26px', width:'70%'}} />
-                    <div className="skeleton" style={{height:'14px', width:'50%'}} />
-                    <div className="skeleton" style={{height:'40px', marginTop:'8px'}} />
+                  <div style={{padding:'14px', display:'flex', flexDirection:'column', gap:'8px'}}>
+                    <div className="skeleton" style={{height:'20px', width:'70%'}} />
+                    <div className="skeleton" style={{height:'12px', width:'50%'}} />
+                    <div className="skeleton" style={{height:'36px', marginTop:'8px'}} />
                   </div>
                 </div>
               ))}
@@ -158,18 +178,52 @@ export default function Home() {
               </p>
             </div>
           ) : (
-            /* Grid 4 columnas con scroll interno vertical */
-            <div className="events-scroll-container">
-              {filteredEvents.map((event, i) => (
-                <div
-                  key={event.id}
-                  className={`events-grid__item ${inView ? 'events-grid__item--visible' : ''}`}
-                  style={{ animationDelay: `${i * 0.08}s` }}
-                >
-                  <EventCard event={event} onClick={setSelected} />
+            <>
+              <div className="events-scroll-container">
+                {pageEvents.map((event, i) => (
+                  <div
+                    key={event.id}
+                    className={`events-grid__item ${inView ? 'events-grid__item--visible' : ''}`}
+                    style={{ animationDelay: `${i * 0.05}s` }}
+                  >
+                    <EventCard event={event} onClick={setSelected} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Paginación */}
+              {totalPages > 1 && (
+                <div className="events-pagination">
+                  <button
+                    className="events-page-btn"
+                    onClick={() => { setPage(p => p - 1); scrollToEvents() }}
+                    disabled={page === 1}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <div className="events-page-numbers">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                      <button
+                        key={n}
+                        className={`events-page-num ${page === n ? 'events-page-num--active' : ''}`}
+                        onClick={() => { setPage(n); scrollToEvents() }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    className="events-page-btn"
+                    onClick={() => { setPage(p => p + 1); scrollToEvents() }}
+                    disabled={page === totalPages}
+                  >
+                    Siguiente →
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>

@@ -266,3 +266,91 @@
   .how__steps { grid-template-columns: 1fr; }
   .events-scroll-container { grid-template-columns: 1fr; max-height: 500px; }
 }
+
+/* ── Contador de eventos ───────────────────────────────────────────────────── */
+.events-count {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+}
+
+/* ── Paginación ────────────────────────────────────────────────────────────── */
+.events-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.events-page-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.events-page-btn:hover:not(:disabled) {
+  border-color: #FFB800;
+  color: #FFB800;
+}
+.events-page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.events-page-numbers {
+  display: flex;
+  gap: 6px;
+}
+
+.events-page-num {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.events-page-num:hover {
+  border-color: #FFB800;
+  color: #FFB800;
+}
+.events-page-num--active {
+  background: #FFB800;
+  border-color: #FFB800;
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+/* ── Fix grid móvil ────────────────────────────────────────────────────────── */
+/* Quitar max-height y overflow en móvil para que no haya scroll interno */
+@media (max-width: 768px) {
+  .events-scroll-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 400px) {
+  .events-scroll-container {
+    grid-template-columns: 1fr;
+  }
+}
