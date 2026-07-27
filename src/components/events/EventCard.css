@@ -13,15 +13,8 @@
   transform: translateY(-4px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,197,24,0.08);
 }
-.ecard--soldout {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.ecard--soldout:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--border);
-}
+.ecard--soldout { opacity: 0.6; cursor: not-allowed; }
+.ecard--soldout:hover { transform: none; box-shadow: none; border-color: var(--border); }
 
 /* Imagen */
 .ecard__img-wrap {
@@ -30,11 +23,7 @@
   overflow: hidden;
   background: var(--bg-2);
 }
-.ecard__img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
+.ecard__img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
 .ecard:hover .ecard__img { transform: scale(1.04); }
 
 .ecard__img-placeholder {
@@ -49,19 +38,19 @@
 /* Badges */
 .ecard__badges {
   position: absolute;
-  top: 12px; left: 12px;
+  top: 8px; left: 8px;
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 .ecard__badge {
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 3px 8px;
+  font-size: 10px;
+  padding: 2px 6px;
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-weight: 500;
 }
 .ecard__badge--offer  { background: var(--accent); color: var(--bg); }
@@ -71,31 +60,27 @@
 
 /* Body */
 .ecard__body {
-  padding: 20px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 12px;
+  gap: 8px;
 }
 
 .ecard__title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 16px;
   letter-spacing: 0.02em;
   color: var(--text);
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
-.ecard__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.ecard__meta { display: flex; flex-direction: column; gap: 4px; }
 .ecard__meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 11px;
   color: var(--text-3);
   font-family: var(--font-mono);
 }
@@ -109,20 +94,20 @@
 
 .ecard__price-wrap { display: flex; flex-direction: column; gap: 2px; }
 .ecard__price-original {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-3);
   text-decoration: line-through;
   font-family: var(--font-mono);
 }
 .ecard__price {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 18px;
   color: var(--accent);
   letter-spacing: 0.02em;
 }
 .ecard__price-currency {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-3);
 }
 
@@ -130,31 +115,39 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-3);
   font-family: var(--font-mono);
 }
 
 .ecard__cta {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   background: rgba(245,197,24,0.08);
   border: 1px solid rgba(245,197,24,0.2);
   color: var(--accent);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   transition: all 0.2s;
 }
-.ecard__cta:hover {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
-}
+.ecard__cta:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 .ecard__cta--disabled {
   background: var(--bg-2);
   border-color: var(--border);
   color: var(--text-3);
   cursor: not-allowed;
+}
+
+/* ── Desktop: tamaños originales ─────────────────────────────────────────── */
+@media (min-width: 769px) {
+  .ecard__body { padding: 20px; gap: 12px; }
+  .ecard__title { font-size: 22px; }
+  .ecard__meta-item { font-size: 13px; }
+  .ecard__price { font-size: 26px; }
+  .ecard__price-original { font-size: 13px; }
+  .ecard__stock { font-size: 12px; }
+  .ecard__cta { padding: 12px; font-size: 14px; }
+  .ecard__badge { font-size: 11px; padding: 3px 8px; }
 }
