@@ -36,8 +36,8 @@ export default function App() {
           } />
 
           {/* Admin */}
-          <Route path="/fran/login" element={<AdminLogin />} />
-          <Route path="/fran" element={
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={
             <ProtectedRoute role="admin">
               <AdminDashboard />
             </ProtectedRoute>
@@ -61,7 +61,7 @@ function BookingResult({ type }) {
   }
   const m = msgs[type]
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', padding: 24 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, background: '#0a0a0f', padding: 24 }}>
       <span style={{ fontSize: 72 }}>{m.icon}</span>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, color: m.color }}>{m.title}</h1>
       <p style={{ color: 'var(--text-2)', fontSize: 18 }}>{m.text}</p>
