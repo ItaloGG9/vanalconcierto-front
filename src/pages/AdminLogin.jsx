@@ -15,7 +15,7 @@ export default function AdminLogin() {
     const result = await login(email, password)
     if (result.success) {
       toast.success('Bienvenido')
-      navigate('/admin')
+      navigate('/fran')
     } else {
       toast.error(result.error)
     }
