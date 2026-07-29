@@ -36,8 +36,8 @@ export default function App() {
           } />
 
           {/* Admin */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={
+          <Route path="/fran/login" element={<AdminLogin />} />
+          <Route path="/fran" element={
             <ProtectedRoute role="admin">
               <AdminDashboard />
             </ProtectedRoute>
@@ -64,8 +64,8 @@ function BookingResult({ type }) {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, background: '#0a0a0f', padding: 24 }}>
       <span style={{ fontSize: 72 }}>{m.icon}</span>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, color: m.color }}>{m.title}</h1>
-      <p style={{ color: 'var(--text-2)', fontSize: 18 }}>{m.text}</p>
-      <a href="/" style={{ marginTop: 16, padding: '12px 28px', background: 'var(--accent)', color: 'var(--bg)', borderRadius: 6, fontWeight: 700 }}>
+      <p style={{ color: '#9090a8', fontSize: 18 }}>{m.text}</p>
+      <a href="/" style={{ marginTop: 16, padding: '12px 28px', background: '#FFB800', color: '#0a0a0f', borderRadius: 6, fontWeight: 700 }}>
         Volver al inicio
       </a>
     </div>
