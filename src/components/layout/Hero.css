@@ -195,3 +195,51 @@
   .hero__stats { gap: 16px; }
   .hero__stat-num { font-size: 24px; }
 }
+
+@media (max-width: 480px) {
+  .hero__content {
+    padding-top: 100px;
+    padding-bottom: 60px;
+  }
+
+  .hero__title {
+    font-size: clamp(40px, 12vw, 60px);
+    line-height: 0.95;
+    margin-bottom: 20px;
+  }
+
+  .hero__subtitle {
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .hero__btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+  }
+
+  .hero__stats {
+    gap: 12px;
+  }
+
+  .hero__stat-num {
+    font-size: 20px;
+  }
+
+  .hero__orb--1 {
+    width: 250px;
+    height: 250px;
+  }
+
+  .hero__orb--2 {
+    width: 150px;
+    height: 150px;
+  }
+}
