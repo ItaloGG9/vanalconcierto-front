@@ -18,8 +18,8 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('vac_token')
-      if (!window.location.pathname.includes('/admin/login')) {
-        window.location.href = '/admin/login'
+      if (!window.location.pathname.includes('/fran/login')) {
+        window.location.href = '/fran/login'
       }
     }
     return Promise.reject(err)
@@ -67,6 +67,7 @@ export const adminDeleteVan = (id) => api.delete(`/vans/${id}`)
 export const adminAssignVan = (eventId, vanId) => api.post('/vans/assign', null, { params: { event_id: eventId, van_id: vanId } })
 export const adminUnassignVan = (eventId, vanId) => api.delete('/vans/unassign', { params: { event_id: eventId, van_id: vanId } })
 export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
+export const getVanEvents = (vanId) => api.get(`/vans/assigned-events/${vanId}`)
 
 // ── Gestión de pasajeros ──────────────────────────────────────
 export const adminGetEventPassengers = (eventId) => api.get(`/bookings/events/${eventId}/passengers`)
