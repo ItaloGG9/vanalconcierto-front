@@ -82,4 +82,8 @@ export const scanPassengerQR = (vanId, qrCode, tripDirection) => api.post(`/driv
 export const getVanStats = (vanId, eventId) => api.get(`/driver/van/${vanId}/stats`, { params: { event_id: eventId } })
 export const updateVanDriver = (vanId, driverName, driverPhone) => api.put(`/vans/${vanId}/driver`, null, { params: { driver_name: driverName, driver_phone: driverPhone } })
 
+// ── Estadísticas y reenvío de tickets ────────────────────────
+export const adminResendTickets = (bookingId) => api.post(`/bookings/admin/${bookingId}/resend-tickets`)
+export const adminGetStats = () => api.get('/bookings/admin/stats')
+
 export default api

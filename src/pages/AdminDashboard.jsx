@@ -7,10 +7,10 @@ import {
   adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
   adminGetVans, adminCreateVan, adminDeleteVan,
   adminGetEventVans, adminAssignVan, adminUnassignVan,
-  adminGetBookingPassengers
+  adminGetBookingPassengers, adminResendTickets, adminGetStats
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu } from 'lucide-react'
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
 import BookingPassengersManager from '../components/BookingPassengersManager'
 import './AdminDashboard.css'
 
@@ -18,6 +18,7 @@ const TABS = [
   { id: 'bookings', label: '📦 Reservas' },
   { id: 'events',   label: '🎵 Eventos' },
   { id: 'vans',     label: '🚐 Vans' },
+  { id: 'stats',    label: '📊 Estadísticas' },
 ]
 
 const GENRES = [
@@ -43,7 +44,6 @@ function StatusBadge({ status }) {
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
-// ── MODAL DE EDICIÓN/CREACIÓN DE EVENTO ───────────────────────────────────────
 function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '',
@@ -248,7 +248,7 @@ function AssignVanModal({ event, onClose, onAssigned }) {
   )
 }
 
-function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject }) {
+function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject, onResend }) {
   return (
     <div className="adm-booking-card">
       <div className="adm-booking-card-header">
@@ -282,6 +282,11 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
           {expanded ? '▼ Ocultar' : '▶ Pasajeros'}
         </button>
+        {booking.payment_status === 'confirmed' && (
+          <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets">
+            <Send size={14} />
+          </button>
+        )}
         {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
           <>
             <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
@@ -335,6 +340,16 @@ function BookingsTab() {
       toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
       load()
     } catch { toast.error('Error al procesar') }
+  }
+
+  // ← MEJORA 2: Reenviar tickets
+  const resend = async (id) => {
+    try {
+      await adminResendTickets(id)
+      toast.success('Tickets reenviados ✅')
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error reenviando tickets')
+    }
   }
 
   const loadEventVans = async (eventId) => {
@@ -429,12 +444,20 @@ function BookingsTab() {
                         <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}</span></td>
                         <td><StatusBadge status={b.payment_status} /></td>
                         <td>
-                          {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
-                            <div className="adm-actions">
-                              <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
-                              <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
-                            </div>
-                          )}
+                          <div className="adm-actions">
+                            {/* ← MEJORA 2: Botón reenviar tickets */}
+                            {b.payment_status === 'confirmed' && (
+                              <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets por email">
+                                <Send size={14} />
+                              </button>
+                            )}
+                            {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
+                              <>
+                                <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
+                                <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                       {expandedBookings.includes(b.id) && (
@@ -463,6 +486,7 @@ function BookingsTab() {
                   onExpand={() => toggleExpandBooking(b.id, b.event_id)}
                   onConfirm={() => confirm(b.id, true)}
                   onReject={() => confirm(b.id, false)}
+                  onResend={() => resend(b.id)}
                 />
               ))}
             </div>
@@ -475,8 +499,8 @@ function BookingsTab() {
 
 function EventsTab() {
   const [events, setEvents] = useState([])
-  const [editingEvent, setEditingEvent] = useState(null)   // ← modal edición
-  const [showNewForm, setShowNewForm] = useState(false)     // ← modal nuevo
+  const [editingEvent, setEditingEvent] = useState(null)
+  const [showNewForm, setShowNewForm] = useState(false)
   const [assigningEvent, setAssigningEvent] = useState(null)
   const [eventVans, setEventVans] = useState({})
 
@@ -544,32 +568,9 @@ function EventsTab() {
         })}
       </div>
 
-      {/* Modal nuevo evento */}
-      {showNewForm && (
-        <EventFormModal
-          editing={null}
-          onClose={() => setShowNewForm(false)}
-          onSaved={load}
-        />
-      )}
-
-      {/* Modal editar evento */}
-      {editingEvent && (
-        <EventFormModal
-          editing={editingEvent}
-          onClose={() => setEditingEvent(null)}
-          onSaved={load}
-        />
-      )}
-
-      {/* Modal asignar vans */}
-      {assigningEvent && (
-        <AssignVanModal
-          event={assigningEvent}
-          onClose={() => setAssigningEvent(null)}
-          onAssigned={load}
-        />
-      )}
+      {showNewForm && <EventFormModal editing={null} onClose={() => setShowNewForm(false)} onSaved={load} />}
+      {editingEvent && <EventFormModal editing={editingEvent} onClose={() => setEditingEvent(null)} onSaved={load} />}
+      {assigningEvent && <AssignVanModal event={assigningEvent} onClose={() => setAssigningEvent(null)} onAssigned={load} />}
     </div>
   )
 }
@@ -659,6 +660,113 @@ function VansTab() {
   )
 }
 
+// ── MEJORA 3: PESTAÑA DE ESTADÍSTICAS ─────────────────────────────────────────
+function StatsTab() {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    adminGetStats()
+      .then(r => setStats(r.data))
+      .catch(() => toast.error('Error cargando estadísticas'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="adm-loading">Cargando estadísticas...</div>
+  if (!stats) return null
+
+  const { summary, by_event } = stats
+
+  return (
+    <div className="adm-tab">
+      <div className="adm-tab__header">
+        <h2>Estadísticas</h2>
+      </div>
+
+      {/* Tarjetas resumen */}
+      <div className="stats-grid">
+        <div className="stats-card">
+          <div className="stats-card__icon" style={{background:'rgba(34,197,94,0.1)', color:'#22c55e'}}>
+            <TrendingUp size={24} />
+          </div>
+          <div className="stats-card__info">
+            <div className="stats-card__value">${Number(summary.total_revenue).toLocaleString('es-CL')}</div>
+            <div className="stats-card__label">Ingresos totales CLP</div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <div className="stats-card__icon" style={{background:'rgba(245,197,24,0.1)', color:'#FFB800'}}>
+            <Ticket size={24} />
+          </div>
+          <div className="stats-card__info">
+            <div className="stats-card__value">{summary.total_tickets_sold}</div>
+            <div className="stats-card__label">Tickets vendidos</div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <div className="stats-card__icon" style={{background:'rgba(255,107,53,0.1)', color:'#ff6b35'}}>
+            <Users size={24} />
+          </div>
+          <div className="stats-card__info">
+            <div className="stats-card__value">{summary.total_tickets_pending}</div>
+            <div className="stats-card__label">Tickets pendientes</div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <div className="stats-card__icon" style={{background:'rgba(139,92,246,0.1)', color:'#8b5cf6'}}>
+            <BarChart2 size={24} />
+          </div>
+          <div className="stats-card__info">
+            <div className="stats-card__value">{summary.total_events_with_sales}</div>
+            <div className="stats-card__label">Eventos con ventas</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla por evento */}
+      <div style={{marginTop: '32px'}}>
+        <h3 style={{marginBottom: '16px', color: 'var(--text)', fontSize: '16px', fontWeight: '600'}}>
+          Desglose por evento
+        </h3>
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Fecha</th>
+                <th>Tickets</th>
+                <th>💳 MP</th>
+                <th>🏦 Transf.</th>
+                <th>Ingresos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {by_event.length === 0 && (
+                <tr><td colSpan={6} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
+                  No hay ventas confirmadas aún
+                </td></tr>
+              )}
+              {by_event.map(ev => (
+                <tr key={ev.event_id}>
+                  <td><div className="adm-cell-main">{ev.event_title}</div></td>
+                  <td><div className="adm-cell-sub">{ev.event_date ? new Date(ev.event_date).toLocaleDateString('es-CL') : '—'}</div></td>
+                  <td><strong>{ev.total_tickets}</strong></td>
+                  <td>{ev.mercadopago_count}</td>
+                  <td>{ev.transfer_count}</td>
+                  <td><strong style={{color:'#22c55e'}}>${Number(ev.total_revenue).toLocaleString('es-CL')}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const { user, logout } = useAuthStore()
@@ -697,6 +805,7 @@ export default function AdminDashboard() {
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'events'   && <EventsTab />}
         {activeTab === 'vans'     && <VansTab />}
+        {activeTab === 'stats'    && <StatsTab />}
       </main>
     </div>
   )
