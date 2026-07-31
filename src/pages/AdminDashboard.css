@@ -909,3 +909,38 @@
   padding: 16px 24px;
   border-top: 1px solid var(--border);
 }
+
+/* Buscador admin */
+.adm-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.adm-search:focus-within { border-color: var(--accent); }
+.adm-search__icon { font-size: 14px; flex-shrink: 0; }
+.adm-search__input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+.adm-search__input::placeholder { color: var(--text-3); }
+.adm-search__clear {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  transition: color 0.2s;
+}
+.adm-search__clear:hover { color: var(--text); }

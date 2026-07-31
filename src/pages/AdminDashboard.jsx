@@ -21,6 +21,8 @@ const TABS = [
   { id: 'stats',    label: '📊 Estadísticas' },
 ]
 
+// Orden visual: Reservas → Eventos → Vans → Estadísticas ✅
+
 const GENRES = [
   { id: 'otro',        label: '🎼 Otro' },
   { id: 'reggaeton',   label: '🔥 Reggaetón' },
@@ -503,6 +505,7 @@ function EventsTab() {
   const [showNewForm, setShowNewForm] = useState(false)
   const [assigningEvent, setAssigningEvent] = useState(null)
   const [eventVans, setEventVans] = useState({})
+  const [search, setSearch] = useState('')
 
   const load = () => {
     getEvents(false).then(r => {
@@ -524,6 +527,10 @@ function EventsTab() {
     load()
   }
 
+  const filteredEvents = events.filter(ev =>
+    ev.title.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
@@ -533,8 +540,28 @@ function EventsTab() {
         </button>
       </div>
 
+      {/* Buscador */}
+      <div className="adm-search">
+        <span className="adm-search__icon">🔍</span>
+        <input
+          type="text"
+          className="adm-search__input"
+          placeholder="Buscar evento..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button className="adm-search__clear" onClick={() => setSearch('')}>✕</button>
+        )}
+      </div>
+
       <div className="adm-events-list">
-        {events.map(ev => {
+        {filteredEvents.length === 0 && (
+          <div style={{textAlign:'center', color:'var(--text-3)', padding:'32px'}}>
+            No se encontraron eventos para "{search}"
+          </div>
+        )}
+        {filteredEvents.map(ev => {
           const vans = eventVans[ev.id] || []
           const available = ev.available_capacity ?? 0
           return (
