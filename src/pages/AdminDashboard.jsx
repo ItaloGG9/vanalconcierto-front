@@ -43,6 +43,128 @@ function StatusBadge({ status }) {
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
+// ── MODAL DE EDICIÓN/CREACIÓN DE EVENTO ───────────────────────────────────────
+function EventFormModal({ editing, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    title: editing?.title || '',
+    description: editing?.description || '',
+    pickup_info: editing?.pickup_info || '',
+    event_date: editing?.event_date?.slice(0,16) || '',
+    price: editing?.price || '',
+    original_price: editing?.original_price || '',
+    total_capacity: editing?.total_capacity || '',
+    is_round_trip: editing?.is_round_trip ?? true,
+    is_active: editing?.is_active ?? true,
+    genre: editing?.genre || 'otro',
+  })
+  const [imageFile, setImageFile] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    if (!form.title || !form.price || !form.event_date || !form.total_capacity) {
+      toast.error('Completa los campos obligatorios')
+      return
+    }
+    setSaving(true)
+    try {
+      const payload = {
+        ...form,
+        price: parseFloat(form.price),
+        original_price: form.original_price ? parseFloat(form.original_price) : null,
+        total_capacity: parseInt(form.total_capacity),
+        event_date: new Date(form.event_date).toISOString(),
+        genre: form.genre
+      }
+      let eventId = editing?.id
+      if (editing) {
+        await adminUpdateEvent(editing.id, payload)
+        toast.success('Evento actualizado')
+      } else {
+        const res = await adminCreateEvent(payload)
+        eventId = res.data.id
+        toast.success('Evento creado')
+      }
+      if (imageFile && eventId) {
+        await adminUploadEventImage(eventId, imageFile)
+        toast.success('Imagen subida')
+      }
+      onSaved()
+      onClose()
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error guardando evento')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card modal-card--wide">
+        <div className="modal-header">
+          <h3>{editing ? `Editar: ${editing.title}` : 'Nuevo evento'}</h3>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="adm-form-grid">
+            <div className="adm-field adm-field--full">
+              <label>Título *</label>
+              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" />
+            </div>
+            <div className="adm-field">
+              <label>Fecha y hora *</label>
+              <input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} />
+            </div>
+            <div className="adm-field">
+              <label>Capacidad Total *</label>
+              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
+            </div>
+            <div className="adm-field">
+              <label>Precio CLP *</label>
+              <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" />
+            </div>
+            <div className="adm-field">
+              <label>Precio original</label>
+              <input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" />
+            </div>
+            <div className="adm-field">
+              <label>Género Musical</label>
+              <select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>
+                {GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
+              </select>
+            </div>
+            <div className="adm-field adm-field--full">
+              <label>Puntos de recogida</label>
+              <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00" />
+            </div>
+            <div className="adm-field adm-field--full">
+              <label>Descripción</label>
+              <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+            </div>
+            <div className="adm-field">
+              <label>Imagen</label>
+              <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} />
+            </div>
+            <div className="adm-field adm-field--check">
+              <label>
+                <input type="checkbox" checked={form.is_round_trip} onChange={e => setForm({...form, is_round_trip: e.target.checked})} />
+                Incluye ida y vuelta
+              </label>
+              <label>
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} />
+                Evento activo
+              </label>
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="adm-btn adm-btn--ghost" onClick={onClose}>Cancelar</button>
+          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
+            {saving ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear evento')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AssignVanModal({ event, onClose, onAssigned }) {
   const [vans, setVans] = useState([])
   const [assignedVans, setAssignedVans] = useState([])
@@ -74,10 +196,7 @@ function AssignVanModal({ event, onClose, onAssigned }) {
       const res = await adminUnassignVan(event.id, vanId)
       setAssignedVans(assignedVans.filter(id => id !== vanId))
       toast.success('Van desasignada')
-      // ← Mostrar advertencia si quedan cupos negativos
-      if (res.data?.warning) {
-        toast.error(res.data.warning, { duration: 6000 })
-      }
+      if (res.data?.warning) toast.error(res.data.warning, { duration: 6000 })
       onAssigned()
     } catch (e) {
       toast.error('Error desasignando van')
@@ -356,15 +475,8 @@ function BookingsTab() {
 
 function EventsTab() {
   const [events, setEvents] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({
-    title: '', description: '', pickup_info: '', event_date: '',
-    price: '', original_price: '', total_capacity: '',
-    is_round_trip: true, is_active: true, genre: 'otro'  // ← genre agregado
-  })
-  const [imageFile, setImageFile] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [editingEvent, setEditingEvent] = useState(null)   // ← modal edición
+  const [showNewForm, setShowNewForm] = useState(false)     // ← modal nuevo
   const [assigningEvent, setAssigningEvent] = useState(null)
   const [eventVans, setEventVans] = useState({})
 
@@ -381,64 +493,6 @@ function EventsTab() {
 
   useEffect(() => { load() }, [])
 
-  const openNew = () => {
-    setEditing(null)
-    setForm({ title:'', description:'', pickup_info:'', event_date:'', price:'', original_price:'', total_capacity:'', is_round_trip:true, is_active:true, genre:'otro' })
-    setShowForm(true)
-  }
-
-  const openEdit = (ev) => {
-    setEditing(ev)
-    setForm({
-      title: ev.title,
-      description: ev.description || '',
-      pickup_info: ev.pickup_info || '',
-      event_date: ev.event_date?.slice(0,16) || '',
-      price: ev.price,
-      original_price: ev.original_price || '',
-      total_capacity: ev.total_capacity,
-      is_round_trip: ev.is_round_trip,
-      is_active: ev.is_active,
-      genre: ev.genre || 'otro'  // ← genre en edición
-    })
-    setShowForm(true)
-  }
-
-  const save = async () => {
-    if (!form.title || !form.price || !form.event_date || !form.total_capacity) {
-      toast.error('Completa los campos obligatorios')
-      return
-    }
-    setSaving(true)
-    try {
-      const payload = {
-        ...form,
-        price: parseFloat(form.price),
-        original_price: form.original_price ? parseFloat(form.original_price) : null,
-        total_capacity: parseInt(form.total_capacity),
-        event_date: new Date(form.event_date).toISOString(),
-        genre: form.genre  // ← genre en payload
-      }
-      let eventId = editing?.id
-      if (editing) {
-        await adminUpdateEvent(editing.id, payload)
-        toast.success('Evento actualizado')
-      } else {
-        const res = await adminCreateEvent(payload)
-        eventId = res.data.id
-        toast.success('Evento creado')
-      }
-      if (imageFile && eventId) {
-        await adminUploadEventImage(eventId, imageFile)
-        toast.success('Imagen subida')
-      }
-      setShowForm(false)
-      load()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error guardando evento')
-    } finally { setSaving(false) }
-  }
-
   const del = async (id) => {
     if (!confirm('¿Desactivar este evento?')) return
     await adminDeleteEvent(id)
@@ -450,75 +504,10 @@ function EventsTab() {
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Eventos</h2>
-        <button className="adm-btn adm-btn--primary" onClick={openNew}><Plus size={14} /> Nuevo evento</button>
+        <button className="adm-btn adm-btn--primary" onClick={() => setShowNewForm(true)}>
+          <Plus size={14} /> Nuevo evento
+        </button>
       </div>
-
-      {showForm && (
-        <div className="adm-form-card">
-          <h3>{editing ? 'Editar evento' : 'Nuevo evento'}</h3>
-          <div className="adm-form-grid">
-            <div className="adm-field adm-field--full">
-              <label>Título *</label>
-              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" />
-            </div>
-            <div className="adm-field">
-              <label>Fecha y hora *</label>
-              <input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} />
-            </div>
-            <div className="adm-field">
-              <label>Capacidad Total *</label>
-              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
-            </div>
-            <div className="adm-field">
-              <label>Precio CLP *</label>
-              <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" />
-            </div>
-            <div className="adm-field">
-              <label>Precio original</label>
-              <input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" />
-            </div>
-
-            {/* ← GÉNERO MUSICAL */}
-            <div className="adm-field">
-              <label>Género Musical</label>
-              <select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>
-                {GENRES.map(g => (
-                  <option key={g.id} value={g.id}>{g.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="adm-field adm-field--full">
-              <label>Puntos de recogida</label>
-              <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00" />
-            </div>
-            <div className="adm-field adm-field--full">
-              <label>Descripción</label>
-              <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-            </div>
-            <div className="adm-field">
-              <label>Imagen</label>
-              <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} />
-            </div>
-            <div className="adm-field adm-field--check">
-              <label>
-                <input type="checkbox" checked={form.is_round_trip} onChange={e => setForm({...form, is_round_trip: e.target.checked})} />
-                Incluye ida y vuelta
-              </label>
-              <label>
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} />
-                Evento activo
-              </label>
-            </div>
-          </div>
-          <div className="adm-form-actions">
-            <button className="adm-btn adm-btn--ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
-              {saving ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear evento')}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="adm-events-list">
         {events.map(ev => {
@@ -547,7 +536,7 @@ function EventsTab() {
               </div>
               <div className="adm-actions">
                 <button className="adm-btn adm-btn--primary" onClick={() => setAssigningEvent(ev)} title="Asignar vans"><UserPlus size={14} /></button>
-                <button className="adm-btn adm-btn--ghost" onClick={() => openEdit(ev)}>Editar</button>
+                <button className="adm-btn adm-btn--ghost" onClick={() => setEditingEvent(ev)}>Editar</button>
                 <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
               </div>
             </div>
@@ -555,8 +544,31 @@ function EventsTab() {
         })}
       </div>
 
+      {/* Modal nuevo evento */}
+      {showNewForm && (
+        <EventFormModal
+          editing={null}
+          onClose={() => setShowNewForm(false)}
+          onSaved={load}
+        />
+      )}
+
+      {/* Modal editar evento */}
+      {editingEvent && (
+        <EventFormModal
+          editing={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSaved={load}
+        />
+      )}
+
+      {/* Modal asignar vans */}
       {assigningEvent && (
-        <AssignVanModal event={assigningEvent} onClose={() => setAssigningEvent(null)} onAssigned={() => load()} />
+        <AssignVanModal
+          event={assigningEvent}
+          onClose={() => setAssigningEvent(null)}
+          onAssigned={load}
+        />
       )}
     </div>
   )
