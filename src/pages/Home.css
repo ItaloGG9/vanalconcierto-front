@@ -258,19 +258,13 @@
 }
 
 @media (max-width: 768px) {
-  .events-scroll-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-height: none;
-    overflow: visible;
-  }
+  .contact__inner { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
+  .events-scroll-container { grid-template-columns: repeat(2, 1fr); max-height: 600px; }
 }
 
-@media (max-width: 400px) {
-  .events-scroll-container {
-    grid-template-columns: repeat(2, 1fr); /* ← cambiar 1fr por repeat(2, 1fr) */
-    gap: 10px;
-  }
+@media (max-width: 480px) {
+  .how__steps { grid-template-columns: 1fr; }
+  .events-scroll-container { grid-template-columns: 1fr; max-height: 500px; }
 }
 
 /* ── Contador de eventos ───────────────────────────────────────────────────── */
@@ -359,4 +353,14 @@
   .events-scroll-container {
     grid-template-columns: 1fr;
   }
+}
+
+/* Fix: permitir que el EventPanel se muestre sobre el grid */
+.events-section {
+  overflow: visible;
+}
+
+.events-scroll-container {
+  overflow-y: auto;
+  overflow-x: visible;
 }
