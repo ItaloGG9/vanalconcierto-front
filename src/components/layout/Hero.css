@@ -192,20 +192,17 @@
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .events-scroll-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-height: none;
-    overflow: visible;
-  }
+  .hero__stats { gap: 16px; }
+  .hero__stat-num { font-size: 24px; }
+
+  .hero__orb--1 { width: 300px; height: 300px; }
+  .hero__orb--2 { width: 200px; height: 200px; }
 }
 
-@media (max-width: 400px) {
-  .events-scroll-container {
-    grid-template-columns: repeat(2, 1fr); /* ← cambiar 1fr por repeat(2, 1fr) */
-    gap: 10px;
+@media (max-width: 480px) {
+  .hero__content {
+    padding-bottom: 48px;
   }
-}
 
   .hero__actions {
     flex-direction: column;
@@ -224,3 +221,4 @@
 
   .hero__orb--1 { width: 200px; height: 200px; }
   .hero__orb--2 { width: 150px; height: 150px; }
+}
