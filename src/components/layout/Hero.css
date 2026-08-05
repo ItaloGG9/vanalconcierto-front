@@ -203,13 +203,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .hero__content {
-    padding-top: 120px;
-  }
-}
-
-
   .hero__title {
     font-size: clamp(40px, 12vw, 60px);
     line-height: 0.95;
