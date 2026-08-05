@@ -67,7 +67,7 @@
 .hero__content {
   position: relative;
   z-index: 1;
-  padding-top: clamp(120px, 20vh, 180px);
+  padding-top: clamp(100px, 15vh, 160px);
   padding-bottom: 80px;
 }
 
