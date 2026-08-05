@@ -49,7 +49,7 @@ const BANK_ACCOUNTS = [
     icon: '🏛️',
     type: 'Cuenta RUT',
     account: '10.268.196-7',
-    rut: '10.268.196-7',
+    rut: '10.268.196',
     name: 'Edith Francesca Constenla Azúa',
     email: 'fconsten@gmail.com',
     note: 'Si tienes problemas al transferir, intenta con otra cuenta.',
