@@ -198,9 +198,17 @@
 
 @media (max-width: 480px) {
   .hero__content {
-    padding-top: 100px;
+    padding-top: 130px;
     padding-bottom: 60px;
   }
+}
+
+@media (max-width: 768px) {
+  .hero__content {
+    padding-top: 120px;
+  }
+}
+
 
   .hero__title {
     font-size: clamp(40px, 12vw, 60px);
@@ -242,4 +250,3 @@
     width: 150px;
     height: 150px;
   }
-}
