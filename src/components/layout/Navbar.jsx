@@ -105,9 +105,6 @@ function PickupModal({ onClose }) {
             </div>
           ))}
         </div>
-        <a href="https://wa.me/56954084889" target="_blank" rel="noreferrer" className="transfer-modal__wa">
-          💬 Consultar horarios por WhatsApp
-        </a>
       </div>
     </div>
   )
