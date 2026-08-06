@@ -11,15 +11,15 @@ const BANK_ACCOUNTS = [
 ]
 
 const PICKUP_POINTS = [
-  { name: 'Peñablanca – Líder, Manuel Montt',               maps: 'https://maps.app.goo.gl/S643cRFympB2YDJy7' },
-  { name: 'Villa Alemana – Paradero 7 (frente a la Copec)', maps: 'https://maps.app.goo.gl/wyBMXSw92mhL2MhSA' },
-  { name: 'Belloto – Paradero Ex La Polar',                  maps: 'https://maps.app.goo.gl/zXuxPPUvtP3QiFpV9' },
-  { name: 'Quilpué – Paradero 26',                           maps: 'https://maps.app.goo.gl/tHxGgBCdcJj2c4PY8' },
-  { name: 'Viña del Mar – Plaza México, Paradero 1 Norte',   maps: 'https://maps.app.goo.gl/XYZdz2RaAJMaKfZu7' },
-  { name: 'Valparaíso – Costado PUCV, Av. Argentina',        maps: 'https://maps.app.goo.gl/aFBMZ4nZ47gEo3258' },
-  { name: 'Placilla – Pasarela Ruta 68',                     maps: 'https://maps.app.goo.gl/YxoidquCzEeLHmjL9' },
-  { name: 'Casablanca – Ruta 68',                            maps: 'https://maps.app.goo.gl/RgSS3x7hZDFihg2L7' },
-  { name: 'Curacaví – Ruta 68',                              maps: 'https://maps.app.goo.gl/SBUnGvhce6N4AoYd9' },
+  { name: 'Peñablanca – Líder, Manuel Montt',               maps: 'https://maps.app.goo.gl/o1vn2wpjFvseqtwAA' },
+  { name: 'Villa Alemana – Paradero 7 (frente a la Copec)', maps: 'https://maps.app.goo.gl/bYk3WodRzAsaiTxC7?g_st=ac' },
+  { name: 'Belloto – Paradero Ex La Polar',                  maps: 'https://maps.app.goo.gl/UYMJjM2kY9bz7Wo36?g_st=ac' },
+  { name: 'Quilpué – Paradero 26',                           maps: 'https://maps.app.goo.gl/HSR5eomJLR1J1VDj6?g_st=ac' },
+  { name: 'Viña del Mar – Plaza México, Paradero 1 Norte',   maps: 'https://maps.app.goo.gl/c433ZwZfAthDoRZ68?g_st=ac' },
+  { name: 'Valparaíso – Costado PUCV, Av. Argentina',        maps: 'https://maps.app.goo.gl/tzQxDSVVcg8PkfYVA?g_st=ac' },
+  { name: 'Placilla – Pasarela Ruta 68',                     maps: 'https://maps.app.goo.gl/jgNC32tD35B3woZB6?g_st=ac' },
+  { name: 'Casablanca – Ruta 68',                            maps: 'https://maps.app.goo.gl/1XUW8RpHSjJRmeAv7?g_st=ac' },
+  { name: 'Curacaví – Ruta 68',                              maps: 'https://maps.app.goo.gl/YLF2JGV6CqYDzo9r8?g_st=ac' },
 ]
 
 function TransferModal({ onClose }) {
