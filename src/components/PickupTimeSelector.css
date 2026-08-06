@@ -1,0 +1,89 @@
+/* src/components/PickupTimeSelector.css */
+
+.pickup-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pickup-selector__base {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pickup-selector__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.pickup-selector__input {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 14px;
+  font-size: 20px;
+  font-family: var(--font-mono);
+  width: fit-content;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.pickup-selector__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pickup-selector__hint {
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* Preview de puntos */
+.pickup-selector__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.pickup-selector__point {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.pickup-selector__point:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.pickup-selector__point--base {
+  background: rgba(255,184,0,0.08);
+  border: 1px solid rgba(255,184,0,0.2);
+}
+
+.pickup-selector__time {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 48px;
+  flex-shrink: 0;
+}
+
+.pickup-selector__name {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.pickup-selector__point--base .pickup-selector__name {
+  color: var(--text);
+  font-weight: 500;
+}

@@ -12,6 +12,8 @@ import {
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
 import BookingPassengersManager from '../components/BookingPassengersManager'
+import PickupTimeSelector from '../components/PickupTimeSelector'
+import '../components/PickupTimeSelector.css'
 import './AdminDashboard.css'
 
 const TABS = [
@@ -20,8 +22,6 @@ const TABS = [
   { id: 'vans',     label: '🚐 Vans' },
   { id: 'stats',    label: '📊 Estadísticas' },
 ]
-
-// Orden visual: Reservas → Eventos → Vans → Estadísticas ✅
 
 const GENRES = [
   { id: 'otro',        label: '🎼 Otro' },
@@ -132,10 +132,16 @@ function EventFormModal({ editing, onClose, onSaved }) {
                 {GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
               </select>
             </div>
+
+            {/* ← NUEVO: Selector de puntos de recogida automático */}
             <div className="adm-field adm-field--full">
               <label>Puntos de recogida</label>
-              <textarea rows={3} value={form.pickup_info} onChange={e => setForm({...form, pickup_info: e.target.value})} placeholder="Punto 1: Plaza Italia 08:00" />
+              <PickupTimeSelector
+                value={form.pickup_info}
+                onChange={(newPickupInfo) => setForm({...form, pickup_info: newPickupInfo})}
+              />
             </div>
+
             <div className="adm-field adm-field--full">
               <label>Descripción</label>
               <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
@@ -344,7 +350,6 @@ function BookingsTab() {
     } catch { toast.error('Error al procesar') }
   }
 
-  // ← MEJORA 2: Reenviar tickets
   const resend = async (id) => {
     try {
       await adminResendTickets(id)
@@ -447,7 +452,6 @@ function BookingsTab() {
                         <td><StatusBadge status={b.payment_status} /></td>
                         <td>
                           <div className="adm-actions">
-                            {/* ← MEJORA 2: Botón reenviar tickets */}
                             {b.payment_status === 'confirmed' && (
                               <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets por email">
                                 <Send size={14} />
@@ -540,7 +544,6 @@ function EventsTab() {
         </button>
       </div>
 
-      {/* Buscador */}
       <div className="adm-search">
         <span className="adm-search__icon">🔍</span>
         <input
@@ -687,7 +690,6 @@ function VansTab() {
   )
 }
 
-// ── MEJORA 3: PESTAÑA DE ESTADÍSTICAS ─────────────────────────────────────────
 function StatsTab() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -710,42 +712,30 @@ function StatsTab() {
         <h2>Estadísticas</h2>
       </div>
 
-      {/* Tarjetas resumen */}
       <div className="stats-grid">
         <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(34,197,94,0.1)', color:'#22c55e'}}>
-            <TrendingUp size={24} />
-          </div>
+          <div className="stats-card__icon" style={{background:'rgba(34,197,94,0.1)', color:'#22c55e'}}><TrendingUp size={24} /></div>
           <div className="stats-card__info">
             <div className="stats-card__value">${Number(summary.total_revenue).toLocaleString('es-CL')}</div>
             <div className="stats-card__label">Ingresos totales CLP</div>
           </div>
         </div>
-
         <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(245,197,24,0.1)', color:'#FFB800'}}>
-            <Ticket size={24} />
-          </div>
+          <div className="stats-card__icon" style={{background:'rgba(245,197,24,0.1)', color:'#FFB800'}}><Ticket size={24} /></div>
           <div className="stats-card__info">
             <div className="stats-card__value">{summary.total_tickets_sold}</div>
             <div className="stats-card__label">Tickets vendidos</div>
           </div>
         </div>
-
         <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(255,107,53,0.1)', color:'#ff6b35'}}>
-            <Users size={24} />
-          </div>
+          <div className="stats-card__icon" style={{background:'rgba(255,107,53,0.1)', color:'#ff6b35'}}><Users size={24} /></div>
           <div className="stats-card__info">
             <div className="stats-card__value">{summary.total_tickets_pending}</div>
             <div className="stats-card__label">Tickets pendientes</div>
           </div>
         </div>
-
         <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(139,92,246,0.1)', color:'#8b5cf6'}}>
-            <BarChart2 size={24} />
-          </div>
+          <div className="stats-card__icon" style={{background:'rgba(139,92,246,0.1)', color:'#8b5cf6'}}><BarChart2 size={24} /></div>
           <div className="stats-card__info">
             <div className="stats-card__value">{summary.total_events_with_sales}</div>
             <div className="stats-card__label">Eventos con ventas</div>
@@ -753,28 +743,18 @@ function StatsTab() {
         </div>
       </div>
 
-      {/* Tabla por evento */}
       <div style={{marginTop: '32px'}}>
-        <h3 style={{marginBottom: '16px', color: 'var(--text)', fontSize: '16px', fontWeight: '600'}}>
-          Desglose por evento
-        </h3>
+        <h3 style={{marginBottom: '16px', color: 'var(--text)', fontSize: '16px', fontWeight: '600'}}>Desglose por evento</h3>
         <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr>
-                <th>Evento</th>
-                <th>Fecha</th>
-                <th>Tickets</th>
-                <th>💳 MP</th>
-                <th>🏦 Transf.</th>
-                <th>Ingresos</th>
+                <th>Evento</th><th>Fecha</th><th>Tickets</th><th>💳 MP</th><th>🏦 Transf.</th><th>Ingresos</th>
               </tr>
             </thead>
             <tbody>
               {by_event.length === 0 && (
-                <tr><td colSpan={6} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>
-                  No hay ventas confirmadas aún
-                </td></tr>
+                <tr><td colSpan={6} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>No hay ventas confirmadas aún</td></tr>
               )}
               {by_event.map(ev => (
                 <tr key={ev.event_id}>
