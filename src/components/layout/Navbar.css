@@ -345,3 +345,93 @@
   .transfer-account__row { flex-direction: column; align-items: flex-start; gap: 2px; }
   .transfer-account__row strong { text-align: left; }
 }
+
+/* ── Botón puntos de recogida ──────────────────────────────────────────────── */
+.navbar__link--pickup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px !important;
+  transition: all 0.2s;
+}
+.navbar__link--pickup:hover {
+  border-color: rgba(255,255,255,0.5);
+  color: #fff !important;
+}
+
+.navbar__mobile-link--pickup {
+  color: rgba(255,255,255,0.9) !important;
+  font-weight: 600;
+}
+
+/* ── Modal puntos de recogida ──────────────────────────────────────────────── */
+.pickup-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pickup-modal__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+.pickup-modal__item:hover { border-color: rgba(255,255,255,0.15); }
+
+.pickup-modal__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+}
+
+.pickup-modal__num {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: #FFB800;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pickup-modal__maps-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(66,133,244,0.12);
+  border: 1px solid rgba(66,133,244,0.3);
+  color: #6fa8f5;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pickup-modal__maps-btn:hover {
+  background: rgba(66,133,244,0.2);
+  color: #fff;
+}
+
+/* CSS admin pickup selector maps btn */
+.pickup-selector__maps-btn {
+  margin-left: auto;
+  font-size: 16px;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.pickup-selector__maps-btn:hover { opacity: 1; }

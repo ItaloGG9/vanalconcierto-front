@@ -1,15 +1,15 @@
 // src/components/PickupTimeSelector.jsx
 
 const PICKUP_POINTS = [
-  { name: 'Peñablanca – Líder, Manuel Montt',           offset: 0   },
-  { name: 'Villa Alemana – Paradero 7 (frente a la Copec)', offset: 10  },
-  { name: 'Belloto – Paradero Ex La Polar',             offset: 20  },
-  { name: 'Quilpué – Paradero 26',                      offset: 30  },
-  { name: 'Viña del Mar – Plaza México, Paradero 1 Norte', offset: 60  },
-  { name: 'Valparaíso – Costado PUCV, Av. Argentina',   offset: 80  },
-  { name: 'Placilla – Pasarela Ruta 68',                offset: 90  },
-  { name: 'Casablanca – Ruta 68',                       offset: 105 },
-  { name: 'Curacaví – Ruta 68',                         offset: 120 },
+  { name: 'Peñablanca – Líder, Manuel Montt',              offset: 0,   maps: 'https://maps.app.goo.gl/S643cRFympB2YDJy7' },
+  { name: 'Villa Alemana – Paradero 7 (frente a la Copec)', offset: 10,  maps: 'https://maps.app.goo.gl/wyBMXSw92mhL2MhSA' },
+  { name: 'Belloto – Paradero Ex La Polar',                 offset: 20,  maps: 'https://maps.app.goo.gl/zXuxPPUvtP3QiFpV9' },
+  { name: 'Quilpué – Paradero 26',                          offset: 30,  maps: 'https://maps.app.goo.gl/tHxGgBCdcJj2c4PY8' },
+  { name: 'Viña del Mar – Plaza México, Paradero 1 Norte',  offset: 60,  maps: 'https://maps.app.goo.gl/XYZdz2RaAJMaKfZu7' },
+  { name: 'Valparaíso – Costado PUCV, Av. Argentina',       offset: 80,  maps: 'https://maps.app.goo.gl/aFBMZ4nZ47gEo3258' },
+  { name: 'Placilla – Pasarela Ruta 68',                    offset: 90,  maps: 'https://maps.app.goo.gl/YxoidquCzEeLHmjL9' },
+  { name: 'Casablanca – Ruta 68',                           offset: 105, maps: 'https://maps.app.goo.gl/RgSS3x7hZDFihg2L7' },
+  { name: 'Curacaví – Ruta 68',                             offset: 120, maps: 'https://maps.app.goo.gl/SBUnGvhce6N4AoYd9' },
 ]
 
 function addMinutes(timeStr, minutes) {
@@ -29,7 +29,6 @@ function buildPickupInfo(baseTime) {
 }
 
 export default function PickupTimeSelector({ value, onChange }) {
-  // Extraer la hora base de Peñablanca del pickup_info actual
   const extractBaseTime = (pickupInfo) => {
     if (!pickupInfo) return ''
     const firstLine = pickupInfo.split('\n')[0]
@@ -69,15 +68,20 @@ export default function PickupTimeSelector({ value, onChange }) {
         )}
       </div>
 
-      {/* Preview de todos los puntos */}
       <div className="pickup-selector__preview">
         {points.map((p, i) => (
-          <div
-            key={i}
-            className={`pickup-selector__point ${i === 0 ? 'pickup-selector__point--base' : ''}`}
-          >
+          <div key={i} className={`pickup-selector__point ${i === 0 ? 'pickup-selector__point--base' : ''}`}>
             <span className="pickup-selector__time">{p.time}</span>
             <span className="pickup-selector__name">{p.name}</span>
+            <a
+              href={p.maps}
+              target="_blank"
+              rel="noreferrer"
+              className="pickup-selector__maps-btn"
+              title="Ver en Maps"
+            >
+              📍
+            </a>
           </div>
         ))}
       </div>
@@ -85,5 +89,4 @@ export default function PickupTimeSelector({ value, onChange }) {
   )
 }
 
-// Exportar también la función para usar en otros lados
 export { buildPickupInfo, PICKUP_POINTS }
