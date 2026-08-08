@@ -10,7 +10,8 @@ import {
   adminGetBookingPassengers, adminResendTickets, adminGetStats
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket, Edit2, Save } from 'lucide-react'
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
+import BookingPassengersManager from '../components/BookingPassengersManager'
 import PickupTimeSelector from '../components/PickupTimeSelector'
 import '../components/PickupTimeSelector.css'
 import './AdminDashboard.css'
@@ -32,12 +33,6 @@ const GENRES = [
   { id: 'hip-hop',     label: '🎙️ Hip-Hop' },
   { id: 'latin',       label: '💃 Latin' },
 ]
-
-const TRIP_TYPE_LABELS = {
-  round_trip:    'Ida y vuelta',
-  outbound_only: 'Solo ida',
-  return_only:   'Solo vuelta',
-}
 
 function StatusBadge({ status }) {
   const map = {
@@ -171,119 +166,7 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
   )
 }
 
-// ── MANAGER DE PASAJEROS CON EDICIÓN ─────────────────────────────────────────
-function PassengersPanel({ bookingId, eventId, vans }) {
-  const [passengers, setPassengers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({})
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const res = await adminGetBookingPassengers(bookingId)
-      setPassengers(res.data || res)
-    } catch { toast.error('Error cargando pasajeros') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { load() }, [bookingId])
-
-  const startEdit = (p) => {
-    setEditingId(p.id)
-    setEditForm({
-      full_name: p.full_name,
-      email: p.email || '',
-      phone: p.phone || '',
-      trip_type: p.trip_type || 'round_trip',
-      pickup_point: p.pickup_point || '',
-      return_point: p.return_point || '',
-    })
-  }
-
-  const saveEdit = async (passengerId) => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/bookings/passengers/${passengerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(editForm)
-      })
-      toast.success('Pasajero actualizado ✅')
-      setEditingId(null)
-      load()
-    } catch { toast.error('Error al guardar') }
-  }
-
-  if (loading) return <div style={{padding:'12px', color:'var(--text-3)', fontSize:'13px'}}>Cargando pasajeros...</div>
-  if (!passengers.length) return <div style={{padding:'12px', color:'var(--text-3)', fontSize:'13px'}}>Sin pasajeros registrados.</div>
-
-  return (
-    <div className="passengers-panel">
-      {passengers.map((p, i) => (
-        <div key={p.id} className="passenger-row">
-          {editingId === p.id ? (
-            <div className="passenger-edit">
-              <div className="passenger-edit__grid">
-                <div className="adm-field">
-                  <label>Nombre</label>
-                  <input value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} />
-                </div>
-                <div className="adm-field">
-                  <label>Email</label>
-                  <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
-                </div>
-                <div className="adm-field">
-                  <label>Teléfono</label>
-                  <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
-                </div>
-                <div className="adm-field">
-                  <label>Tipo de viaje</label>
-                  <select value={editForm.trip_type} onChange={e => setEditForm({...editForm, trip_type: e.target.value})}>
-                    <option value="round_trip">Ida y vuelta</option>
-                    <option value="outbound_only">Solo ida</option>
-                    <option value="return_only">Solo vuelta</option>
-                  </select>
-                </div>
-                <div className="adm-field">
-                  <label>Punto recogida</label>
-                  <input value={editForm.pickup_point} onChange={e => setEditForm({...editForm, pickup_point: e.target.value})} />
-                </div>
-                <div className="adm-field">
-                  <label>Punto retorno</label>
-                  <input value={editForm.return_point} onChange={e => setEditForm({...editForm, return_point: e.target.value})} />
-                </div>
-              </div>
-              <div style={{display:'flex', gap:'8px', marginTop:'8px'}}>
-                <button className="adm-btn adm-btn--primary" onClick={() => saveEdit(p.id)} style={{fontSize:'12px',padding:'6px 12px'}}>
-                  <Save size={13} /> Guardar
-                </button>
-                <button className="adm-btn adm-btn--ghost" onClick={() => setEditingId(null)} style={{fontSize:'12px',padding:'6px 12px'}}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="passenger-view">
-              <div className="passenger-num">{i + 1}</div>
-              <div className="passenger-info">
-                <div className="passenger-name">{p.full_name}</div>
-                <div className="passenger-meta">
-                  {p.phone && <span>📞 {p.phone}</span>}
-                  {p.trip_type && <span className="passenger-trip">{TRIP_TYPE_LABELS[p.trip_type] || p.trip_type}</span>}
-                  {p.pickup_point && <span>📍 {p.pickup_point}</span>}
-                  {p.vans?.name && <span className="passenger-van">🚐 {p.vans.name}</span>}
-                </div>
-              </div>
-              <button className="adm-btn adm-btn--ghost" onClick={() => startEdit(p)} style={{fontSize:'12px',padding:'5px 10px',flexShrink:0}}>
-                <Edit2 size={12} /> Editar
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // ── BOOKING CARD MÓVIL ────────────────────────────────────────────────────────
 function BookingCard({ booking, eventName, vanName, onExpand, expanded, onConfirm, onReject, onResend, eventVans }) {
@@ -349,7 +232,7 @@ function BookingCard({ booking, eventName, vanName, onExpand, expanded, onConfir
       </div>
       {expanded && (
         <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-          <PassengersPanel bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} />
+          <BookingPassengersManager bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} />
         </div>
       )}
     </div>
@@ -550,8 +433,8 @@ function BookingsTab() {
                         </tr>
                         {expandedBookings.includes(b.id) && (
                           <tr className="expanded-row">
-                            <td colSpan={11} style={{padding:'12px 16px', background:'var(--bg-2)'}}>
-                              <PassengersPanel bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
+                            <td colSpan={11} style={{padding:'0', background:'var(--bg-2)'}}>
+                              <BookingPassengersManager bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
                             </td>
                           </tr>
                         )}
