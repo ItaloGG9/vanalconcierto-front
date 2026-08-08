@@ -45,15 +45,20 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
 
   // ← Actualiza visualmente sin recargar todo
   const handleReassign = async (passengerId, newVanId) => {
+    const vanIdToSet = newVanId || null
     try {
-      await adminReassignPassenger(passengerId, newVanId || null)
-      toast.success('Van asignada ✅')
-      // Actualizar solo el pasajero afectado en el estado local
-      setPassengers(prev => prev.map(p =>
-        p.id === passengerId
-          ? { ...p, assigned_van_id: newVanId || null }
-          : p
-      ))
+      await adminReassignPassenger(passengerId, vanIdToSet)
+      toast.success(vanIdToSet ? 'Van asignada ✅' : 'Van removida')
+      // Actualizar localmente: assigned_van_id + vans objeto
+      setPassengers(prev => prev.map(p => {
+        if (p.id !== passengerId) return p
+        const vanObj = vanIdToSet ? vans.find(v => v.id === vanIdToSet) : null
+        return {
+          ...p,
+          assigned_van_id: vanIdToSet,
+          vans: vanObj ? { id: vanObj.id, name: vanObj.name } : null
+        }
+      }))
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error reasignando')
     }
@@ -140,7 +145,7 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
                   <div className="bpm__label">Van</div>
                   <select
                     className="bpm__select"
-                    value={p.assigned_van_id || ''}
+                    value={p.assigned_van_id ?? ''}
                     onChange={(e) => handleReassign(p.id, e.target.value)}
                   >
                     <option value="">Sin asignar</option>
