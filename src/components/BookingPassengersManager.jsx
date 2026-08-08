@@ -92,7 +92,7 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
 
   const saveEdit = async (passengerId) => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('auth-token')
+      const token = localStorage.getItem('vac_token')
       const apiUrl = import.meta.env.VITE_API_URL || ''
       const res = await fetch(`${apiUrl}/bookings/passengers/${passengerId}`, {
         method: 'PUT',
