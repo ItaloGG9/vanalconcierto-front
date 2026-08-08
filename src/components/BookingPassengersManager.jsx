@@ -4,6 +4,19 @@ import toast from 'react-hot-toast'
 import { Edit2, Save, X } from 'lucide-react'
 import './BookingPassengersManager.css'
 
+
+const PICKUP_POINTS_LIST = [
+  'Peñablanca – Líder, Manuel Montt',
+  'Villa Alemana – Paradero 7 (frente a la Copec)',
+  'Belloto – Paradero Ex La Polar',
+  'Quilpué – Paradero 26',
+  'Viña del Mar – Plaza México, Paradero 1 Norte',
+  'Valparaíso – Costado PUCV, Av. Argentina',
+  'Placilla – Pasarela Ruta 68',
+  'Casablanca – Ruta 68',
+  'Curacaví – Ruta 68',
+]
+
 const TRIP_TYPE_LABELS = {
   round_trip:    'Ida y vuelta',
   outbound_only: 'Solo ida',
@@ -183,11 +196,17 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
                   </div>
                   <div className="adm-field">
                     <label>Punto de recogida</label>
-                    <input value={editForm.pickup_point} onChange={e => setEditForm({...editForm, pickup_point: e.target.value})} />
+                    <select value={editForm.pickup_point} onChange={e => setEditForm({...editForm, pickup_point: e.target.value})}>
+                      <option value="">Seleccionar...</option>
+                      {PICKUP_POINTS_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
                   </div>
                   <div className="adm-field">
                     <label>Punto de retorno</label>
-                    <input value={editForm.return_point} onChange={e => setEditForm({...editForm, return_point: e.target.value})} />
+                    <select value={editForm.return_point} onChange={e => setEditForm({...editForm, return_point: e.target.value})}>
+                      <option value="">Seleccionar...</option>
+                      {PICKUP_POINTS_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div style={{display:'flex', justifyContent:'flex-end', marginTop:'12px'}}>

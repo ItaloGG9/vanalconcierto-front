@@ -35,6 +35,19 @@ const GENRES = [
   { id: 'latin',       label: '💃 Latin' },
 ]
 
+
+const PICKUP_POINTS_LIST = [
+  'Peñablanca – Líder, Manuel Montt',
+  'Villa Alemana – Paradero 7 (frente a la Copec)',
+  'Belloto – Paradero Ex La Polar',
+  'Quilpué – Paradero 26',
+  'Viña del Mar – Plaza México, Paradero 1 Norte',
+  'Valparaíso – Costado PUCV, Av. Argentina',
+  'Placilla – Pasarela Ruta 68',
+  'Casablanca – Ruta 68',
+  'Curacaví – Ruta 68',
+]
+
 function StatusBadge({ status }) {
   const map = {
     pending:   { label: 'Pendiente',   color: '#f5c518' },
@@ -169,8 +182,20 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
                 <option value="return_only">Solo vuelta</option>
               </select>
             </div>
-            <div className="adm-field"><label>Punto de recogida</label><input value={form.pickup_point} onChange={e => setForm({...form, pickup_point: e.target.value})} placeholder="Peñablanca – Líder" /></div>
-            <div className="adm-field"><label>Punto de retorno</label><input value={form.return_point} onChange={e => setForm({...form, return_point: e.target.value})} placeholder="Peñablanca – Líder" /></div>
+            <div className="adm-field">
+              <label>Punto de recogida</label>
+              <select value={form.pickup_point} onChange={e => setForm({...form, pickup_point: e.target.value})}>
+                <option value="">Seleccionar...</option>
+                {PICKUP_POINTS_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div className="adm-field">
+              <label>Punto de retorno</label>
+              <select value={form.return_point} onChange={e => setForm({...form, return_point: e.target.value})}>
+                <option value="">Seleccionar...</option>
+                {PICKUP_POINTS_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
             <div className="adm-field"><label>Total CLP</label><input type="number" value={form.total_price} onChange={e => setForm({...form, total_price: e.target.value})} placeholder="15000" /></div>
             <div className="adm-field"><label>Ya pagado CLP</label><input type="number" value={form.paid_amount} onChange={e => setForm({...form, paid_amount: e.target.value})} placeholder="0" /></div>
           </div>
