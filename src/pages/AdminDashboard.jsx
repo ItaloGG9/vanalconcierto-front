@@ -10,8 +10,7 @@ import {
   adminGetBookingPassengers, adminResendTickets, adminGetStats
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
-import BookingPassengersManager from '../components/BookingPassengersManager'
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket, Edit2, Save } from 'lucide-react'
 import PickupTimeSelector from '../components/PickupTimeSelector'
 import '../components/PickupTimeSelector.css'
 import './AdminDashboard.css'
@@ -34,6 +33,12 @@ const GENRES = [
   { id: 'latin',       label: '💃 Latin' },
 ]
 
+const TRIP_TYPE_LABELS = {
+  round_trip:    'Ida y vuelta',
+  outbound_only: 'Solo ida',
+  return_only:   'Solo vuelta',
+}
+
 function StatusBadge({ status }) {
   const map = {
     pending:   { label: 'Pendiente',   color: '#f5c518' },
@@ -46,6 +51,554 @@ function StatusBadge({ status }) {
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
+// ── MODAL INGRESO MANUAL DE PASAJERO ─────────────────────────────────────────
+function ManualPassengerModal({ events, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    event_id: '',
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+    full_name: '',
+    pickup_point: '',
+    return_point: '',
+    trip_type: 'round_trip',
+    total_price: '',
+    paid_amount: '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    if (!form.event_id || !form.customer_name || !form.customer_phone) {
+      toast.error('Completa los campos obligatorios')
+      return
+    }
+    setSaving(true)
+    try {
+      const { default: api } = await import('../services/api')
+      // Crear booking manual como confirmed
+      const bookingRes = await fetch(`${import.meta.env.VITE_API_URL}/bookings/admin/manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({
+          event_id: form.event_id,
+          customer_name: form.customer_name,
+          customer_email: form.customer_email || `manual_${Date.now()}@vanalconcierto.cl`,
+          customer_phone: form.customer_phone,
+          quantity: 1,
+          total_price: parseFloat(form.total_price) || 0,
+          paid_amount: parseFloat(form.paid_amount) || 0,
+          payment_method: 'manual',
+          payment_status: 'confirmed',
+          passenger: {
+            full_name: form.full_name || form.customer_name,
+            pickup_point: form.pickup_point,
+            return_point: form.return_point,
+            trip_type: form.trip_type,
+          }
+        })
+      })
+      if (!bookingRes.ok) throw new Error('Error creando reserva manual')
+      toast.success('Pasajero agregado ✅')
+      onSaved()
+      onClose()
+    } catch (e) {
+      toast.error('Error al guardar')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card modal-card--wide">
+        <div className="modal-header">
+          <h3>➕ Ingreso manual de pasajero</h3>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="adm-form-grid">
+            <div className="adm-field adm-field--full">
+              <label>Evento *</label>
+              <select value={form.event_id} onChange={e => setForm({...form, event_id: e.target.value})}>
+                <option value="">Seleccionar evento...</option>
+                {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+              </select>
+            </div>
+            <div className="adm-field">
+              <label>Nombre cliente *</label>
+              <input value={form.customer_name} onChange={e => setForm({...form, customer_name: e.target.value})} placeholder="Juan Pérez" />
+            </div>
+            <div className="adm-field">
+              <label>Teléfono *</label>
+              <input value={form.customer_phone} onChange={e => setForm({...form, customer_phone: e.target.value})} placeholder="+56912345678" />
+            </div>
+            <div className="adm-field">
+              <label>Email</label>
+              <input value={form.customer_email} onChange={e => setForm({...form, customer_email: e.target.value})} placeholder="correo@email.com" />
+            </div>
+            <div className="adm-field">
+              <label>Tipo de viaje</label>
+              <select value={form.trip_type} onChange={e => setForm({...form, trip_type: e.target.value})}>
+                <option value="round_trip">Ida y vuelta</option>
+                <option value="outbound_only">Solo ida</option>
+                <option value="return_only">Solo vuelta</option>
+              </select>
+            </div>
+            <div className="adm-field">
+              <label>Punto de recogida</label>
+              <input value={form.pickup_point} onChange={e => setForm({...form, pickup_point: e.target.value})} placeholder="Peñablanca – Líder" />
+            </div>
+            <div className="adm-field">
+              <label>Punto de retorno</label>
+              <input value={form.return_point} onChange={e => setForm({...form, return_point: e.target.value})} placeholder="Peñablanca – Líder" />
+            </div>
+            <div className="adm-field">
+              <label>Total CLP</label>
+              <input type="number" value={form.total_price} onChange={e => setForm({...form, total_price: e.target.value})} placeholder="15000" />
+            </div>
+            <div className="adm-field">
+              <label>Ya pagado CLP</label>
+              <input type="number" value={form.paid_amount} onChange={e => setForm({...form, paid_amount: e.target.value})} placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="adm-btn adm-btn--ghost" onClick={onClose}>Cancelar</button>
+          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
+            {saving ? 'Guardando...' : 'Agregar pasajero'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── MANAGER DE PASAJEROS CON EDICIÓN ─────────────────────────────────────────
+function PassengersPanel({ bookingId, eventId, vans }) {
+  const [passengers, setPassengers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res = await adminGetBookingPassengers(bookingId)
+      setPassengers(res.data || res)
+    } catch { toast.error('Error cargando pasajeros') }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { load() }, [bookingId])
+
+  const startEdit = (p) => {
+    setEditingId(p.id)
+    setEditForm({
+      full_name: p.full_name,
+      email: p.email || '',
+      phone: p.phone || '',
+      trip_type: p.trip_type || 'round_trip',
+      pickup_point: p.pickup_point || '',
+      return_point: p.return_point || '',
+    })
+  }
+
+  const saveEdit = async (passengerId) => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/bookings/passengers/${passengerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(editForm)
+      })
+      toast.success('Pasajero actualizado ✅')
+      setEditingId(null)
+      load()
+    } catch { toast.error('Error al guardar') }
+  }
+
+  if (loading) return <div style={{padding:'12px', color:'var(--text-3)', fontSize:'13px'}}>Cargando pasajeros...</div>
+  if (!passengers.length) return <div style={{padding:'12px', color:'var(--text-3)', fontSize:'13px'}}>Sin pasajeros registrados.</div>
+
+  return (
+    <div className="passengers-panel">
+      {passengers.map((p, i) => (
+        <div key={p.id} className="passenger-row">
+          {editingId === p.id ? (
+            <div className="passenger-edit">
+              <div className="passenger-edit__grid">
+                <div className="adm-field">
+                  <label>Nombre</label>
+                  <input value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} />
+                </div>
+                <div className="adm-field">
+                  <label>Email</label>
+                  <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+                </div>
+                <div className="adm-field">
+                  <label>Teléfono</label>
+                  <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+                </div>
+                <div className="adm-field">
+                  <label>Tipo de viaje</label>
+                  <select value={editForm.trip_type} onChange={e => setEditForm({...editForm, trip_type: e.target.value})}>
+                    <option value="round_trip">Ida y vuelta</option>
+                    <option value="outbound_only">Solo ida</option>
+                    <option value="return_only">Solo vuelta</option>
+                  </select>
+                </div>
+                <div className="adm-field">
+                  <label>Punto recogida</label>
+                  <input value={editForm.pickup_point} onChange={e => setEditForm({...editForm, pickup_point: e.target.value})} />
+                </div>
+                <div className="adm-field">
+                  <label>Punto retorno</label>
+                  <input value={editForm.return_point} onChange={e => setEditForm({...editForm, return_point: e.target.value})} />
+                </div>
+              </div>
+              <div style={{display:'flex', gap:'8px', marginTop:'8px'}}>
+                <button className="adm-btn adm-btn--primary" onClick={() => saveEdit(p.id)} style={{fontSize:'12px',padding:'6px 12px'}}>
+                  <Save size={13} /> Guardar
+                </button>
+                <button className="adm-btn adm-btn--ghost" onClick={() => setEditingId(null)} style={{fontSize:'12px',padding:'6px 12px'}}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="passenger-view">
+              <div className="passenger-num">{i + 1}</div>
+              <div className="passenger-info">
+                <div className="passenger-name">{p.full_name}</div>
+                <div className="passenger-meta">
+                  {p.phone && <span>📞 {p.phone}</span>}
+                  {p.trip_type && <span className="passenger-trip">{TRIP_TYPE_LABELS[p.trip_type] || p.trip_type}</span>}
+                  {p.pickup_point && <span>📍 {p.pickup_point}</span>}
+                  {p.vans?.name && <span className="passenger-van">🚐 {p.vans.name}</span>}
+                </div>
+              </div>
+              <button className="adm-btn adm-btn--ghost" onClick={() => startEdit(p)} style={{fontSize:'12px',padding:'5px 10px',flexShrink:0}}>
+                <Edit2 size={12} /> Editar
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── BOOKING CARD MÓVIL ────────────────────────────────────────────────────────
+function BookingCard({ booking, eventName, vanName, onExpand, expanded, onConfirm, onReject, onResend, eventVans }) {
+  const pending = Math.max(0, Number(booking.total_price) - Number(booking.paid_amount || booking.total_price))
+  const paid = Number(booking.paid_amount || booking.total_price)
+
+  return (
+    <div className="adm-booking-card">
+      <div className="adm-booking-card-header">
+        <div style={{ flex: 1 }}>
+          <div className="adm-cell-main">{booking.customer_name}</div>
+          <div className="adm-cell-sub">{booking.customer_email}</div>
+        </div>
+        <StatusBadge status={booking.payment_status} />
+      </div>
+      <div className="adm-booking-card-row">
+        <span className="adm-booking-card-label">Evento</span>
+        <span className="adm-booking-card-value">{eventName}</span>
+      </div>
+      {vanName && (
+        <div className="adm-booking-card-row">
+          <span className="adm-booking-card-label">Van</span>
+          <span className="adm-booking-card-value van-badge">🚐 {vanName}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ flex: 1 }}>
+          <span className="adm-booking-card-label">Cupos</span>
+          <div className="adm-booking-card-value">{booking.quantity}</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <span className="adm-booking-card-label">Total</span>
+          <div className="adm-booking-card-value">${Number(booking.total_price).toLocaleString('es-CL')}</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <span className="adm-booking-card-label">Pagado</span>
+          <div className="adm-booking-card-value" style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</div>
+        </div>
+        {pending > 0 && (
+          <div style={{ flex: 1 }}>
+            <span className="adm-booking-card-label">Pendiente</span>
+            <div className="adm-booking-card-value" style={{color:'#ff6b35'}}>${pending.toLocaleString('es-CL')}</div>
+          </div>
+        )}
+      </div>
+      <div className="adm-booking-card-row">
+        <span className="adm-booking-card-label">Método</span>
+        <span className="adm-method">{booking.payment_method === 'mercadopago' ? '💳 Mercado Pago' : booking.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transferencia'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
+          {expanded ? '▼ Ocultar' : '▶ Pasajeros'}
+        </button>
+        {booking.payment_status === 'confirmed' && (
+          <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets"><Send size={14} /></button>
+        )}
+        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
+          <>
+            <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
+            <button className="adm-btn adm-btn--danger" onClick={() => onReject()} title="Rechazar"><X size={14} /></button>
+          </>
+        )}
+      </div>
+      {expanded && (
+        <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+          <PassengersPanel bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── BOOKINGS TAB ──────────────────────────────────────────────────────────────
+function BookingsTab() {
+  const [bookings, setBookings] = useState([])
+  const [events, setEvents] = useState([])
+  const [filter, setFilter] = useState('all')
+  const [selectedEventId, setSelectedEventId] = useState(null)
+  const [showEventDropdown, setShowEventDropdown] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [expandedBookings, setExpandedBookings] = useState([])
+  const [eventVans, setEventVans] = useState({})
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [showManual, setShowManual] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const load = () => {
+    setLoading(true)
+    adminGetBookings(filter !== 'all' ? { status: filter } : {})
+      .then(r => setBookings(r.data))
+      .catch(() => toast.error('Error cargando reservas'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { getEvents(false).then(r => setEvents(r.data)).catch(() => {}) }, [])
+  useEffect(load, [filter])
+
+  const confirm = async (id, approved) => {
+    try {
+      await adminConfirmTransfer({ booking_id: id, approved })
+      toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
+      load()
+    } catch { toast.error('Error al procesar') }
+  }
+
+  const resend = async (id) => {
+    try {
+      await adminResendTickets(id)
+      toast.success('Tickets reenviados ✅')
+    } catch (e) { toast.error(e.response?.data?.detail || 'Error reenviando tickets') }
+  }
+
+  const loadEventVans = async (eventId) => {
+    if (eventVans[eventId]) return
+    try {
+      const res = await adminGetEventVans(eventId)
+      setEventVans(prev => ({...prev, [eventId]: res.data}))
+    } catch {}
+  }
+
+  const toggleExpand = async (bookingId, eventId) => {
+    const isExpanding = !expandedBookings.includes(bookingId)
+    setExpandedBookings(prev => prev.includes(bookingId) ? prev.filter(id => id !== bookingId) : [...prev, bookingId])
+    if (isExpanding) await loadEventVans(eventId)
+  }
+
+  // Obtener nombre de van asignada a una reserva (por pasajeros)
+  const getVanName = (booking) => {
+    const vans = eventVans[booking.event_id]
+    if (!vans || !vans.length) return null
+    return vans[0]?.name || null
+  }
+
+  const bookingsFiltrados = selectedEventId ? bookings.filter(b => b.event_id === selectedEventId) : bookings
+  const getNombreEvento = (eventId) => events.find(e => e.id === eventId)?.title || 'Evento desconocido'
+  const eventoSeleccionado = selectedEventId ? events.find(e => e.id === selectedEventId)?.title : 'Todos los eventos'
+
+  return (
+    <div className="adm-tab">
+      <div className="adm-tab__header">
+        <h2>Reservas</h2>
+        <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+          <button className="adm-btn adm-btn--primary" onClick={() => setShowManual(true)}>
+            <Plus size={14} /> Ingreso manual
+          </button>
+        </div>
+      </div>
+
+      <div className="adm-filters-container">
+        <div style={{position: 'relative', width: isMobile ? '100%' : '200px'}}>
+          <button className="adm-select" onClick={() => setShowEventDropdown(!showEventDropdown)} style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>
+            <span>{eventoSeleccionado}</span>
+            <span style={{transform: showEventDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s'}}>▼</span>
+          </button>
+          {showEventDropdown && (
+            <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,marginTop:'4px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 4px 12px rgba(0,0,0,0.15)',maxHeight:'300px',overflowY:'auto'}}>
+              <div onClick={() => { setSelectedEventId(null); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:selectedEventId===null?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===null?'var(--accent)':'var(--text)',fontWeight:selectedEventId===null?'600':'400'}}>
+                📋 Todos ({bookings.length})
+              </div>
+              {events.map(evento => {
+                const num = bookings.filter(b => b.event_id === evento.id).length
+                return (
+                  <div key={evento.id} onClick={() => { setSelectedEventId(evento.id); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',background:selectedEventId===evento.id?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===evento.id?'var(--accent)':'var(--text)',fontWeight:selectedEventId===evento.id?'600':'400'}}>
+                    <span>{evento.title}</span>
+                    <span style={{fontSize:'12px',background:'var(--bg-2)',padding:'2px 6px',borderRadius:'3px'}}>{num}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+        {selectedEventId && (
+          <button className="adm-btn adm-btn--ghost" onClick={() => setSelectedEventId(null)} style={{padding:'6px 10px'}}>✕ Limpiar</button>
+        )}
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select" style={{width: isMobile ? '100%' : 'auto'}}>
+          <option value="all">Todos los estados</option>
+          <option value="pending">Pendientes</option>
+          <option value="reserved">Reservadas</option>
+          <option value="confirmed">Confirmadas</option>
+          <option value="rejected">Rechazadas</option>
+        </select>
+      </div>
+
+      {selectedEventId && (
+        <div style={{fontSize:'13px',color:'var(--text-3)',padding:'8px 0',borderBottom:'1px solid var(--border)',marginBottom:'12px'}}>
+          Mostrando {bookingsFiltrados.length} de {bookings.length} reservas
+        </div>
+      )}
+
+      {loading ? <div className="adm-loading">Cargando...</div> : (
+        <>
+          {!isMobile && (
+            <div className="adm-table-wrap">
+              <table className="adm-table">
+                <thead>
+                  <tr>
+                    <th style={{width:'40px'}}></th>
+                    <th>Cliente</th>
+                    <th>Evento</th>
+                    <th>Van</th>
+                    <th>Cupos</th>
+                    <th>Total</th>
+                    <th>Pagado</th>
+                    <th>Pendiente</th>
+                    <th>Método</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookingsFiltrados.length === 0 && (
+                    <tr><td colSpan={11} style={{textAlign:'center',color:'var(--text-3)',padding:32}}>
+                      {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
+                    </td></tr>
+                  )}
+                  {bookingsFiltrados.map(b => {
+                    const vans = eventVans[b.event_id] || []
+                    const vanName = vans.length > 0 ? vans[0].name : null
+                    const paid = Number(b.paid_amount ?? b.total_price)
+                    const pending = Math.max(0, Number(b.total_price) - paid)
+                    return (
+                      <>
+                        <tr key={b.id}>
+                          <td><button onClick={() => toggleExpand(b.id, b.event_id)} className="btn-expand">{expandedBookings.includes(b.id) ? '▼' : '▶'}</button></td>
+                          <td>
+                            <div className="adm-cell-main">{b.customer_name}</div>
+                            <div className="adm-cell-sub">{b.customer_email}</div>
+                          </td>
+                          <td><div className="adm-cell-sub">{getNombreEvento(b.event_id)}</div></td>
+                          <td>
+                            {vanName
+                              ? <span className="van-assigned-badge">🚐 {vanName}</span>
+                              : <span className="van-unassigned-badge">Sin van</span>
+                            }
+                          </td>
+                          <td>{b.quantity}</td>
+                          <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
+                          <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
+                          <td style={{color: pending > 0 ? '#ff6b35' : 'var(--text-3)'}}>
+                            {pending > 0 ? `$${pending.toLocaleString('es-CL')}` : '—'}
+                          </td>
+                          <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></td>
+                          <td><StatusBadge status={b.payment_status} /></td>
+                          <td>
+                            <div className="adm-actions">
+                              {b.payment_status === 'confirmed' && (
+                                <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets">
+                                  <Send size={14} />
+                                </button>
+                              )}
+                              {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
+                                <>
+                                  <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
+                                  <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {expandedBookings.includes(b.id) && (
+                          <tr className="expanded-row">
+                            <td colSpan={11} style={{padding:'12px 16px', background:'var(--bg-2)'}}>
+                              <PassengersPanel bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {isMobile && (
+            <div className="adm-booking-cards">
+              {bookingsFiltrados.length === 0 && (
+                <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px 16px'}}>
+                  {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
+                </div>
+              )}
+              {bookingsFiltrados.map(b => (
+                <BookingCard key={b.id} booking={b}
+                  eventName={getNombreEvento(b.event_id)}
+                  vanName={eventVans[b.event_id]?.[0]?.name || null}
+                  expanded={expandedBookings.includes(b.id)}
+                  onExpand={() => toggleExpand(b.id, b.event_id)}
+                  onConfirm={() => confirm(b.id, true)}
+                  onReject={() => confirm(b.id, false)}
+                  onResend={() => resend(b.id)}
+                  eventVans={eventVans[b.event_id] || []}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {showManual && (
+        <ManualPassengerModal
+          events={events}
+          onClose={() => setShowManual(false)}
+          onSaved={load}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── EVENTS TAB ────────────────────────────────────────────────────────────────
 function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '',
@@ -69,32 +622,14 @@ function EventFormModal({ editing, onClose, onSaved }) {
     }
     setSaving(true)
     try {
-      const payload = {
-        ...form,
-        price: parseFloat(form.price),
-        original_price: form.original_price ? parseFloat(form.original_price) : null,
-        total_capacity: parseInt(form.total_capacity),
-        event_date: new Date(form.event_date).toISOString(),
-        genre: form.genre
-      }
+      const payload = { ...form, price: parseFloat(form.price), original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: parseInt(form.total_capacity), event_date: new Date(form.event_date).toISOString() }
       let eventId = editing?.id
-      if (editing) {
-        await adminUpdateEvent(editing.id, payload)
-        toast.success('Evento actualizado')
-      } else {
-        const res = await adminCreateEvent(payload)
-        eventId = res.data.id
-        toast.success('Evento creado')
-      }
-      if (imageFile && eventId) {
-        await adminUploadEventImage(eventId, imageFile)
-        toast.success('Imagen subida')
-      }
-      onSaved()
-      onClose()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error guardando evento')
-    } finally { setSaving(false) }
+      if (editing) { await adminUpdateEvent(editing.id, payload); toast.success('Evento actualizado') }
+      else { const res = await adminCreateEvent(payload); eventId = res.data.id; toast.success('Evento creado') }
+      if (imageFile && eventId) { await adminUploadEventImage(eventId, imageFile); toast.success('Imagen subida') }
+      onSaved(); onClose()
+    } catch (e) { toast.error(e.response?.data?.detail || 'Error guardando evento') }
+    finally { setSaving(false) }
   }
 
   return (
@@ -106,67 +641,27 @@ function EventFormModal({ editing, onClose, onSaved }) {
         </div>
         <div className="modal-body">
           <div className="adm-form-grid">
-            <div className="adm-field adm-field--full">
-              <label>Título *</label>
-              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" />
-            </div>
-            <div className="adm-field">
-              <label>Fecha y hora *</label>
-              <input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} />
-            </div>
-            <div className="adm-field">
-              <label>Capacidad Total *</label>
-              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
-            </div>
-            <div className="adm-field">
-              <label>Precio CLP *</label>
-              <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" />
-            </div>
-            <div className="adm-field">
-              <label>Precio original</label>
-              <input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" />
-            </div>
-            <div className="adm-field">
-              <label>Género Musical</label>
-              <select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>
-                {GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
-              </select>
-            </div>
-
-            {/* ← NUEVO: Selector de puntos de recogida automático */}
+            <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
+            <div className="adm-field"><label>Fecha y hora *</label><input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
+            <div className="adm-field"><label>Capacidad Total *</label><input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" /></div>
+            <div className="adm-field"><label>Precio CLP *</label><input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" /></div>
+            <div className="adm-field"><label>Precio original</label><input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" /></div>
+            <div className="adm-field"><label>Género Musical</label><select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>{GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
             <div className="adm-field adm-field--full">
               <label>Puntos de recogida</label>
-              <PickupTimeSelector
-                value={form.pickup_info}
-                onChange={(newPickupInfo) => setForm({...form, pickup_info: newPickupInfo})}
-              />
+              <PickupTimeSelector value={form.pickup_info} onChange={(v) => setForm({...form, pickup_info: v})} />
             </div>
-
-            <div className="adm-field adm-field--full">
-              <label>Descripción</label>
-              <textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-            </div>
-            <div className="adm-field">
-              <label>Imagen</label>
-              <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} />
-            </div>
+            <div className="adm-field adm-field--full"><label>Descripción</label><textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+            <div className="adm-field"><label>Imagen</label><input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} /></div>
             <div className="adm-field adm-field--check">
-              <label>
-                <input type="checkbox" checked={form.is_round_trip} onChange={e => setForm({...form, is_round_trip: e.target.checked})} />
-                Incluye ida y vuelta
-              </label>
-              <label>
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} />
-                Evento activo
-              </label>
+              <label><input type="checkbox" checked={form.is_round_trip} onChange={e => setForm({...form, is_round_trip: e.target.checked})} /> Incluye ida y vuelta</label>
+              <label><input type="checkbox" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} /> Evento activo</label>
             </div>
           </div>
         </div>
         <div className="modal-footer">
           <button className="adm-btn adm-btn--ghost" onClick={onClose}>Cancelar</button>
-          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
-            {saving ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear evento')}
-          </button>
+          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>{saving ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear evento')}</button>
         </div>
       </div>
     </div>
@@ -180,35 +675,19 @@ function AssignVanModal({ event, onClose, onAssigned }) {
 
   useEffect(() => {
     Promise.all([adminGetVans(), adminGetEventVans(event.id)])
-      .then(([vansRes, assignedRes]) => {
-        setVans(vansRes.data)
-        setAssignedVans(assignedRes.data.map(v => v.id))
-      })
+      .then(([vansRes, assignedRes]) => { setVans(vansRes.data); setAssignedVans(assignedRes.data.map(v => v.id)) })
       .catch(() => toast.error('Error cargando vans'))
       .finally(() => setLoading(false))
   }, [event.id])
 
   const handleAssign = async (vanId) => {
-    try {
-      await adminAssignVan(event.id, vanId)
-      setAssignedVans([...assignedVans, vanId])
-      toast.success('Van asignada ✅')
-      onAssigned()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error asignando van')
-    }
+    try { await adminAssignVan(event.id, vanId); setAssignedVans([...assignedVans, vanId]); toast.success('Van asignada ✅'); onAssigned() }
+    catch (e) { toast.error(e.response?.data?.detail || 'Error asignando van') }
   }
 
   const handleUnassign = async (vanId) => {
-    try {
-      const res = await adminUnassignVan(event.id, vanId)
-      setAssignedVans(assignedVans.filter(id => id !== vanId))
-      toast.success('Van desasignada')
-      if (res.data?.warning) toast.error(res.data.warning, { duration: 6000 })
-      onAssigned()
-    } catch (e) {
-      toast.error('Error desasignando van')
-    }
+    try { const res = await adminUnassignVan(event.id, vanId); setAssignedVans(assignedVans.filter(id => id !== vanId)); toast.success('Van desasignada'); if (res.data?.warning) toast.error(res.data.warning, { duration: 6000 }); onAssigned() }
+    catch (e) { toast.error('Error desasignando van') }
   }
 
   return (
@@ -220,11 +699,9 @@ function AssignVanModal({ event, onClose, onAssigned }) {
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body">
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>Cargando vans...</div>
-          ) : vans.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-3)' }}>No hay vans registradas.</div>
-          ) : (
+          {loading ? <div style={{textAlign:'center',padding:'32px',color:'var(--text-3)'}}>Cargando vans...</div>
+          : vans.length === 0 ? <div style={{textAlign:'center',padding:'32px',color:'var(--text-3)'}}>No hay vans registradas.</div>
+          : (
             <div className="drivers-assign-list">
               {vans.map(van => {
                 const isAssigned = assignedVans.includes(van.id)
@@ -233,16 +710,9 @@ function AssignVanModal({ event, onClose, onAssigned }) {
                     <div className="driver-assign-avatar"><span>🚐</span></div>
                     <div className="driver-assign-info">
                       <div className="adm-cell-main">{van.name}</div>
-                      <div className="adm-cell-sub">
-                        {van.license_plate && `📋 ${van.license_plate} · `}
-                        {van.capacity} pasajeros
-                        {van.current_driver_name && ` · 🧑‍✈️ ${van.current_driver_name}`}
-                      </div>
+                      <div className="adm-cell-sub">{van.license_plate && `📋 ${van.license_plate} · `}{van.capacity} pasajeros{van.current_driver_name && ` · 🧑‍✈️ ${van.current_driver_name}`}</div>
                     </div>
-                    <button
-                      className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`}
-                      onClick={() => isAssigned ? handleUnassign(van.id) : handleAssign(van.id)}
-                    >
+                    <button className={`adm-btn ${isAssigned ? 'adm-btn--danger' : 'adm-btn--success'}`} onClick={() => isAssigned ? handleUnassign(van.id) : handleAssign(van.id)}>
                       {isAssigned ? <><X size={14} /> Quitar</> : <><Check size={14} /> Asignar</>}
                     </button>
                   </div>
@@ -252,253 +722,6 @@ function AssignVanModal({ event, onClose, onAssigned }) {
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject, onResend }) {
-  return (
-    <div className="adm-booking-card">
-      <div className="adm-booking-card-header">
-        <div style={{ flex: 1 }}>
-          <div className="adm-cell-main">{booking.customer_name}</div>
-          <div className="adm-cell-sub">{booking.customer_email}</div>
-        </div>
-        <StatusBadge status={booking.payment_status} />
-      </div>
-      <div className="adm-booking-card-row">
-        <span className="adm-booking-card-label">Evento</span>
-        <span className="adm-booking-card-value">{eventName}</span>
-      </div>
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <div style={{ flex: 1 }}>
-          <span className="adm-booking-card-label">Cupos</span>
-          <div className="adm-booking-card-value">{booking.quantity}</div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <span className="adm-booking-card-label">Total</span>
-          <div className="adm-booking-card-value">${Number(booking.total_price).toLocaleString('es-CL')}</div>
-        </div>
-      </div>
-      <div className="adm-booking-card-row">
-        <span className="adm-booking-card-label">Método</span>
-        <span className="adm-method">
-          {booking.payment_method === 'mercadopago' ? '💳 Mercado Pago' : '🏦 Transferencia'}
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
-          {expanded ? '▼ Ocultar' : '▶ Pasajeros'}
-        </button>
-        {booking.payment_status === 'confirmed' && (
-          <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets">
-            <Send size={14} />
-          </button>
-        )}
-        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
-          <>
-            <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
-            <button className="adm-btn adm-btn--danger" onClick={() => onReject()} title="Rechazar"><X size={14} /></button>
-          </>
-        )}
-      </div>
-      {expanded && (
-        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', background: 'var(--bg-2)', padding: '12px', borderRadius: '8px' }}>
-          <BookingPassengersManager bookingId={booking.id} eventId={booking.event_id} vans={[]} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-function BookingsTab() {
-  const [bookings, setBookings] = useState([])
-  const [events, setEvents] = useState([])
-  const [filter, setFilter] = useState('all')
-  const [selectedEventId, setSelectedEventId] = useState(null)
-  const [showEventDropdown, setShowEventDropdown] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [expandedBookings, setExpandedBookings] = useState([])
-  const [eventVans, setEventVans] = useState({})
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  const load = () => {
-    setLoading(true)
-    adminGetBookings(filter !== 'all' ? { status: filter } : {})
-      .then(r => setBookings(r.data))
-      .catch(() => toast.error('Error cargando reservas'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    getEvents(false).then(r => setEvents(r.data)).catch(() => {})
-  }, [])
-
-  useEffect(load, [filter])
-
-  const confirm = async (id, approved) => {
-    try {
-      await adminConfirmTransfer({ booking_id: id, approved })
-      toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
-      load()
-    } catch { toast.error('Error al procesar') }
-  }
-
-  const resend = async (id) => {
-    try {
-      await adminResendTickets(id)
-      toast.success('Tickets reenviados ✅')
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error reenviando tickets')
-    }
-  }
-
-  const loadEventVans = async (eventId) => {
-    if (eventVans[eventId]) return
-    try {
-      const res = await adminGetEventVans(eventId)
-      setEventVans(prev => ({...prev, [eventId]: res.data}))
-    } catch {}
-  }
-
-  const toggleExpandBooking = async (bookingId, eventId) => {
-    const isExpanding = !expandedBookings.includes(bookingId)
-    setExpandedBookings(prev => prev.includes(bookingId) ? prev.filter(id => id !== bookingId) : [...prev, bookingId])
-    if (isExpanding) await loadEventVans(eventId)
-  }
-
-  const bookingsFiltrados = selectedEventId ? bookings.filter(b => b.event_id === selectedEventId) : bookings
-  const getNombreEvento = (eventId) => events.find(e => e.id === eventId)?.title || 'Evento desconocido'
-  const eventoSeleccionado = selectedEventId ? events.find(e => e.id === selectedEventId)?.title : 'Todos los eventos'
-
-  return (
-    <div className="adm-tab">
-      <div className="adm-tab__header">
-        <h2>Reservas</h2>
-        <div className="adm-filters-container">
-          <div style={{position: 'relative', width: isMobile ? '100%' : '200px'}}>
-            <button className="adm-select" onClick={() => setShowEventDropdown(!showEventDropdown)} style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>
-              <span>{eventoSeleccionado}</span>
-              <span style={{transform: showEventDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s'}}>▼</span>
-            </button>
-            {showEventDropdown && (
-              <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,marginTop:'4px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 4px 12px rgba(0,0,0,0.15)',maxHeight:'300px',overflowY:'auto'}}>
-                <div onClick={() => { setSelectedEventId(null); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:selectedEventId===null?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===null?'var(--accent)':'var(--text)',fontWeight:selectedEventId===null?'600':'400'}}>
-                  📋 Todos ({bookings.length})
-                </div>
-                {events.map(evento => {
-                  const num = bookings.filter(b => b.event_id === evento.id).length
-                  return (
-                    <div key={evento.id} onClick={() => { setSelectedEventId(evento.id); setShowEventDropdown(false) }} style={{padding:'10px 16px',cursor:'pointer',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',background:selectedEventId===evento.id?'rgba(245,197,24,0.1)':'transparent',color:selectedEventId===evento.id?'var(--accent)':'var(--text)',fontWeight:selectedEventId===evento.id?'600':'400'}}>
-                      <span>{evento.title}</span>
-                      <span style={{fontSize:'12px',background:'var(--bg-2)',padding:'2px 6px',borderRadius:'3px'}}>{num}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-          {selectedEventId && (
-            <button className="adm-btn adm-btn--ghost" onClick={() => setSelectedEventId(null)} style={{padding:'6px 10px'}}>✕ Limpiar</button>
-          )}
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select" style={{width: isMobile ? '100%' : 'auto'}}>
-            <option value="all">Todos los estados</option>
-            <option value="pending">Pendientes</option>
-            <option value="reserved">Reservadas</option>
-            <option value="confirmed">Confirmadas</option>
-            <option value="rejected">Rechazadas</option>
-          </select>
-        </div>
-      </div>
-
-      {selectedEventId && (
-        <div style={{fontSize:'13px',color:'var(--text-3)',padding:'8px 0',borderBottom:'1px solid var(--border)',marginBottom:'12px'}}>
-          Mostrando {bookingsFiltrados.length} de {bookings.length} reservas
-        </div>
-      )}
-
-      {loading ? <div className="adm-loading">Cargando...</div> : (
-        <>
-          {!isMobile && (
-            <div className="adm-table-wrap">
-              <table className="adm-table">
-                <thead>
-                  <tr>
-                    <th style={{width:'40px'}}></th>
-                    <th>Cliente</th><th>Evento</th><th>Cupos</th><th>Total</th><th>Método</th><th>Estado</th><th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookingsFiltrados.length === 0 && (
-                    <tr><td colSpan={8} style={{textAlign:'center',color:'var(--text-3)',padding:32}}>
-                      {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
-                    </td></tr>
-                  )}
-                  {bookingsFiltrados.map(b => (
-                    <>
-                      <tr key={b.id}>
-                        <td><button onClick={() => toggleExpandBooking(b.id, b.event_id)} className="btn-expand">{expandedBookings.includes(b.id) ? '▼' : '▶'}</button></td>
-                        <td><div className="adm-cell-main">{b.customer_name}</div><div className="adm-cell-sub">{b.customer_email}</div></td>
-                        <td>{getNombreEvento(b.event_id)}</td>
-                        <td>{b.quantity}</td>
-                        <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
-                        <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : '🏦 Transf.'}</span></td>
-                        <td><StatusBadge status={b.payment_status} /></td>
-                        <td>
-                          <div className="adm-actions">
-                            {b.payment_status === 'confirmed' && (
-                              <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets por email">
-                                <Send size={14} />
-                              </button>
-                            )}
-                            {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
-                              <>
-                                <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
-                                <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedBookings.includes(b.id) && (
-                        <tr className="expanded-row">
-                          <td colSpan={8}>
-                            <BookingPassengersManager bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {isMobile && (
-            <div className="adm-booking-cards">
-              {bookingsFiltrados.length === 0 && (
-                <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px 16px'}}>
-                  {selectedEventId ? 'No hay reservas para este evento' : 'Sin resultados'}
-                </div>
-              )}
-              {bookingsFiltrados.map(b => (
-                <BookingCard key={b.id} booking={b} eventName={getNombreEvento(b.event_id)}
-                  expanded={expandedBookings.includes(b.id)}
-                  onExpand={() => toggleExpandBooking(b.id, b.event_id)}
-                  onConfirm={() => confirm(b.id, true)}
-                  onReject={() => confirm(b.id, false)}
-                  onResend={() => resend(b.id)}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
     </div>
   )
 }
@@ -515,79 +738,44 @@ function EventsTab() {
     getEvents(false).then(r => {
       setEvents(r.data)
       r.data.forEach(event => {
-        adminGetEventVans(event.id).then(res => {
-          setEventVans(prev => ({ ...prev, [event.id]: res.data }))
-        }).catch(() => {})
+        adminGetEventVans(event.id).then(res => setEventVans(prev => ({ ...prev, [event.id]: res.data }))).catch(() => {})
       })
     }).catch(() => {})
   }
-
   useEffect(() => { load() }, [])
 
   const del = async (id) => {
     if (!confirm('¿Desactivar este evento?')) return
-    await adminDeleteEvent(id)
-    toast.success('Evento desactivado')
-    load()
+    await adminDeleteEvent(id); toast.success('Evento desactivado'); load()
   }
 
-  const filteredEvents = events.filter(ev =>
-    ev.title.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredEvents = events.filter(ev => ev.title.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
         <h2>Eventos</h2>
-        <button className="adm-btn adm-btn--primary" onClick={() => setShowNewForm(true)}>
-          <Plus size={14} /> Nuevo evento
-        </button>
+        <button className="adm-btn adm-btn--primary" onClick={() => setShowNewForm(true)}><Plus size={14} /> Nuevo evento</button>
       </div>
-
       <div className="adm-search">
         <span className="adm-search__icon">🔍</span>
-        <input
-          type="text"
-          className="adm-search__input"
-          placeholder="Buscar evento..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {search && (
-          <button className="adm-search__clear" onClick={() => setSearch('')}>✕</button>
-        )}
+        <input type="text" className="adm-search__input" placeholder="Buscar evento..." value={search} onChange={e => setSearch(e.target.value)} />
+        {search && <button className="adm-search__clear" onClick={() => setSearch('')}>✕</button>}
       </div>
-
       <div className="adm-events-list">
-        {filteredEvents.length === 0 && (
-          <div style={{textAlign:'center', color:'var(--text-3)', padding:'32px'}}>
-            No se encontraron eventos para "{search}"
-          </div>
-        )}
+        {filteredEvents.length === 0 && <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px'}}>No se encontraron eventos para "{search}"</div>}
         {filteredEvents.map(ev => {
           const vans = eventVans[ev.id] || []
           const available = ev.available_capacity ?? 0
           return (
             <div key={ev.id} className="adm-event-row">
-              <div className="adm-event-img">
-                {ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}
-              </div>
+              <div className="adm-event-img">{ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}</div>
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
-                <div className="adm-cell-sub">
-                  {new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles
-                  {ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}
-                </div>
-                {vans.length > 0 && (
-                  <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>
-                )}
+                <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
+                {vans.length > 0 && <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>}
               </div>
-              <div className="adm-event-status">
-                {ev.is_active
-                  ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span>
-                  : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>
-                }
-              </div>
+              <div className="adm-event-status">{ev.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>}</div>
               <div className="adm-actions">
                 <button className="adm-btn adm-btn--primary" onClick={() => setAssigningEvent(ev)} title="Asignar vans"><UserPlus size={14} /></button>
                 <button className="adm-btn adm-btn--ghost" onClick={() => setEditingEvent(ev)}>Editar</button>
@@ -597,7 +785,6 @@ function EventsTab() {
           )
         })}
       </div>
-
       {showNewForm && <EventFormModal editing={null} onClose={() => setShowNewForm(false)} onSaved={load} />}
       {editingEvent && <EventFormModal editing={editingEvent} onClose={() => setEditingEvent(null)} onSaved={load} />}
       {assigningEvent && <AssignVanModal event={assigningEvent} onClose={() => setAssigningEvent(null)} onAssigned={load} />}
@@ -610,45 +797,23 @@ function VansTab() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' })
   const [saving, setSaving] = useState(false)
-
   const load = () => adminGetVans().then(r => setVans(r.data)).catch(() => {})
   useEffect(() => { load() }, [])
-
   const save = async () => {
-    if (!form.name || !form.owner_email || !form.password) {
-      toast.error('Completa los campos obligatorios')
-      return
-    }
+    if (!form.name || !form.owner_email || !form.password) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
-    try {
-      await adminCreateVan(form)
-      toast.success('Van creada exitosamente')
-      setShowForm(false)
-      setForm({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' })
-      load()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error creando van')
-    } finally { setSaving(false) }
+    try { await adminCreateVan(form); toast.success('Van creada exitosamente'); setShowForm(false); setForm({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' }); load() }
+    catch (e) { toast.error(e.response?.data?.detail || 'Error creando van') }
+    finally { setSaving(false) }
   }
-
   const remove = async (id) => {
     if (!confirm('¿Eliminar esta van?')) return
-    try {
-      await adminDeleteVan(id)
-      toast.success('Van eliminada')
-      load()
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error eliminando van')
-    }
+    try { await adminDeleteVan(id); toast.success('Van eliminada'); load() }
+    catch (e) { toast.error(e.response?.data?.detail || 'Error eliminando van') }
   }
-
   return (
     <div className="adm-tab">
-      <div className="adm-tab__header">
-        <h2>Vans</h2>
-        <button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}><Plus size={14} /> Nueva van</button>
-      </div>
-
+      <div className="adm-tab__header"><h2>Vans</h2><button className="adm-btn adm-btn--primary" onClick={() => setShowForm(!showForm)}><Plus size={14} /> Nueva van</button></div>
       {showForm && (
         <div className="adm-form-card">
           <h3>Registrar van</h3>
@@ -667,22 +832,13 @@ function VansTab() {
           </div>
         </div>
       )}
-
       <div className="adm-drivers-list">
         {vans.map(v => (
           <div key={v.id} className="adm-driver-row">
             <div className="adm-driver-avatar"><span>🚐</span></div>
-            <div className="adm-driver-info">
-              <div className="adm-cell-main">{v.name}</div>
-              <div className="adm-cell-sub">
-                {v.license_plate && `📋 ${v.license_plate} · `}{v.capacity} pasajeros
-                {v.current_driver_name && ` · 🧑‍✈️ ${v.current_driver_name}`}
-              </div>
-            </div>
+            <div className="adm-driver-info"><div className="adm-cell-main">{v.name}</div><div className="adm-cell-sub">{v.license_plate && `📋 ${v.license_plate} · `}{v.capacity} pasajeros{v.current_driver_name && ` · 🧑‍✈️ ${v.current_driver_name}`}</div></div>
             <div>{v.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activa</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactiva</span>}</div>
-            <div className="adm-actions">
-              <button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}><Trash2 size={14} /></button>
-            </div>
+            <div className="adm-actions"><button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}><Trash2 size={14} /></button></div>
           </div>
         ))}
       </div>
@@ -693,69 +849,26 @@ function VansTab() {
 function StatsTab() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    adminGetStats()
-      .then(r => setStats(r.data))
-      .catch(() => toast.error('Error cargando estadísticas'))
-      .finally(() => setLoading(false))
-  }, [])
-
+  useEffect(() => { adminGetStats().then(r => setStats(r.data)).catch(() => toast.error('Error cargando estadísticas')).finally(() => setLoading(false)) }, [])
   if (loading) return <div className="adm-loading">Cargando estadísticas...</div>
   if (!stats) return null
-
   const { summary, by_event } = stats
-
   return (
     <div className="adm-tab">
-      <div className="adm-tab__header">
-        <h2>Estadísticas</h2>
-      </div>
-
+      <div className="adm-tab__header"><h2>Estadísticas</h2></div>
       <div className="stats-grid">
-        <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(34,197,94,0.1)', color:'#22c55e'}}><TrendingUp size={24} /></div>
-          <div className="stats-card__info">
-            <div className="stats-card__value">${Number(summary.total_revenue).toLocaleString('es-CL')}</div>
-            <div className="stats-card__label">Ingresos totales CLP</div>
-          </div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(245,197,24,0.1)', color:'#FFB800'}}><Ticket size={24} /></div>
-          <div className="stats-card__info">
-            <div className="stats-card__value">{summary.total_tickets_sold}</div>
-            <div className="stats-card__label">Tickets vendidos</div>
-          </div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(255,107,53,0.1)', color:'#ff6b35'}}><Users size={24} /></div>
-          <div className="stats-card__info">
-            <div className="stats-card__value">{summary.total_tickets_pending}</div>
-            <div className="stats-card__label">Tickets pendientes</div>
-          </div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-card__icon" style={{background:'rgba(139,92,246,0.1)', color:'#8b5cf6'}}><BarChart2 size={24} /></div>
-          <div className="stats-card__info">
-            <div className="stats-card__value">{summary.total_events_with_sales}</div>
-            <div className="stats-card__label">Eventos con ventas</div>
-          </div>
-        </div>
+        <div className="stats-card"><div className="stats-card__icon" style={{background:'rgba(34,197,94,0.1)',color:'#22c55e'}}><TrendingUp size={24} /></div><div className="stats-card__info"><div className="stats-card__value">${Number(summary.total_revenue).toLocaleString('es-CL')}</div><div className="stats-card__label">Ingresos totales CLP</div></div></div>
+        <div className="stats-card"><div className="stats-card__icon" style={{background:'rgba(245,197,24,0.1)',color:'#FFB800'}}><Ticket size={24} /></div><div className="stats-card__info"><div className="stats-card__value">{summary.total_tickets_sold}</div><div className="stats-card__label">Tickets vendidos</div></div></div>
+        <div className="stats-card"><div className="stats-card__icon" style={{background:'rgba(255,107,53,0.1)',color:'#ff6b35'}}><Users size={24} /></div><div className="stats-card__info"><div className="stats-card__value">{summary.total_tickets_pending}</div><div className="stats-card__label">Tickets pendientes</div></div></div>
+        <div className="stats-card"><div className="stats-card__icon" style={{background:'rgba(139,92,246,0.1)',color:'#8b5cf6'}}><BarChart2 size={24} /></div><div className="stats-card__info"><div className="stats-card__value">{summary.total_events_with_sales}</div><div className="stats-card__label">Eventos con ventas</div></div></div>
       </div>
-
-      <div style={{marginTop: '32px'}}>
-        <h3 style={{marginBottom: '16px', color: 'var(--text)', fontSize: '16px', fontWeight: '600'}}>Desglose por evento</h3>
+      <div style={{marginTop:'32px'}}>
+        <h3 style={{marginBottom:'16px',color:'var(--text)',fontSize:'16px',fontWeight:'600'}}>Desglose por evento</h3>
         <div className="adm-table-wrap">
           <table className="adm-table">
-            <thead>
-              <tr>
-                <th>Evento</th><th>Fecha</th><th>Tickets</th><th>💳 MP</th><th>🏦 Transf.</th><th>Ingresos</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Evento</th><th>Fecha</th><th>Tickets</th><th>💳 MP</th><th>🏦 Transf.</th><th>Ingresos</th></tr></thead>
             <tbody>
-              {by_event.length === 0 && (
-                <tr><td colSpan={6} style={{textAlign:'center', color:'var(--text-3)', padding:32}}>No hay ventas confirmadas aún</td></tr>
-              )}
+              {by_event.length === 0 && <tr><td colSpan={6} style={{textAlign:'center',color:'var(--text-3)',padding:32}}>No hay ventas confirmadas aún</td></tr>}
               {by_event.map(ev => (
                 <tr key={ev.event_id}>
                   <td><div className="adm-cell-main">{ev.event_title}</div></td>
@@ -779,32 +892,21 @@ export default function AdminDashboard() {
   const { user, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
-
   return (
     <div className="adm">
-      {isMobile && (
-        <button className="adm-mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu size={24} /></button>
-      )}
+      {isMobile && <button className="adm-mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu size={24} /></button>}
       <aside className={`adm-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="adm-sidebar__logo"><span>🚐</span><span>VanAlConcierto</span></div>
         <nav className="adm-sidebar__nav">
-          {TABS.map(t => (
-            <button key={t.id} className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`} onClick={() => { setActiveTab(t.id); setSidebarOpen(false) }}>
-              {t.label}
-            </button>
-          ))}
+          {TABS.map(t => <button key={t.id} className={`adm-sidebar__link ${activeTab === t.id ? 'adm-sidebar__link--active' : ''}`} onClick={() => { setActiveTab(t.id); setSidebarOpen(false) }}>{t.label}</button>)}
         </nav>
         <div className="adm-sidebar__footer">
-          <div className="adm-sidebar__user">
-            <span className="adm-sidebar__user-name">{user?.full_name}</span>
-            <span className="adm-sidebar__user-role">Admin</span>
-          </div>
+          <div className="adm-sidebar__user"><span className="adm-sidebar__user-name">{user?.full_name}</span><span className="adm-sidebar__user-role">Admin</span></div>
           <button className="adm-sidebar__logout" onClick={logout} title="Cerrar sesión"><LogOut size={16} /></button>
         </div>
       </aside>
