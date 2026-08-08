@@ -1,8 +1,7 @@
-// src/components/BookingPassengersManager.jsx
-
 import { useState, useEffect } from 'react'
 import { adminGetBookingPassengers, adminReassignPassenger, adminGetEventVans } from '../services/api'
 import toast from 'react-hot-toast'
+import { Edit2, Save, X } from 'lucide-react'
 import './BookingPassengersManager.css'
 
 const TRIP_TYPE_LABELS = {
@@ -15,13 +14,12 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
   const [passengers, setPassengers] = useState([])
   const [vans, setVans] = useState(vansProp || [])
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
 
   useEffect(() => {
     loadPassengers()
-    // Si no nos pasaron vans, las cargamos nosotros
-    if (!vansProp || vansProp.length === 0) {
-      loadVans()
-    }
+    if (!vansProp || vansProp.length === 0) loadVans()
   }, [bookingId, eventId])
 
   useEffect(() => {
@@ -29,15 +27,12 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
   }, [vansProp])
 
   const loadPassengers = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
       const res = await adminGetBookingPassengers(bookingId)
-      setPassengers(res.data)
-    } catch (err) {
-      setPassengers([])
-    } finally {
-      setLoading(false)
-    }
+      setPassengers(res.data || [])
+    } catch { setPassengers([]) }
+    finally { setLoading(false) }
   }
 
   const loadVans = async () => {
@@ -48,21 +43,59 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
     } catch {}
   }
 
+  // ← Actualiza visualmente sin recargar todo
   const handleReassign = async (passengerId, newVanId) => {
     try {
       await adminReassignPassenger(passengerId, newVanId || null)
       toast.success('Van asignada ✅')
-      loadPassengers()
+      // Actualizar solo el pasajero afectado en el estado local
+      setPassengers(prev => prev.map(p =>
+        p.id === passengerId
+          ? { ...p, assigned_van_id: newVanId || null }
+          : p
+      ))
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error reasignando')
     }
   }
 
-  if (loading) return <div className="bpm-loading">Cargando pasajeros...</div>
+  // ← Edición inline de datos del pasajero
+  const startEdit = (p) => {
+    setEditingId(p.id)
+    setEditForm({
+      full_name: p.full_name || '',
+      email: p.email || '',
+      phone: p.phone || '',
+      trip_type: p.trip_type || 'round_trip',
+      pickup_point: p.pickup_point || '',
+      return_point: p.return_point || '',
+    })
+  }
 
-  if (passengers.length === 0) return (
-    <div className="bpm-empty">ℹ️ Sin datos individuales de pasajeros</div>
-  )
+  const saveEdit = async (passengerId) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('auth-token')
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/bookings/passengers/${passengerId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Pasajero actualizado ✅')
+      // Actualizar localmente sin recargar
+      setPassengers(prev => prev.map(p =>
+        p.id === passengerId ? { ...p, ...editForm } : p
+      ))
+      setEditingId(null)
+    } catch { toast.error('Error al guardar') }
+  }
+
+  if (loading) return <div className="bpm-loading">Cargando pasajeros...</div>
+  if (!passengers.length) return <div className="bpm-empty">ℹ️ Sin datos individuales de pasajeros</div>
 
   return (
     <div className="bpm">
@@ -75,49 +108,107 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
 
       <div className="bpm__list">
         {passengers.map((p, i) => (
-          <div key={p.id} className="bpm__row">
-            {/* Número */}
-            <div className="bpm__num">{i + 1}</div>
+          <div key={p.id}>
+            {/* ── Vista normal ── */}
+            {editingId !== p.id && (
+              <div className="bpm__row">
+                <div className="bpm__num">{i + 1}</div>
 
-            {/* Nombre + contacto */}
-            <div className="bpm__col bpm__col--name">
-              <div className="bpm__name">{p.full_name}</div>
-              {p.email && <div className="bpm__sub">{p.email}</div>}
-              {p.phone && <div className="bpm__sub">{p.phone}</div>}
-            </div>
+                <div className="bpm__col bpm__col--name">
+                  <div className="bpm__label">Pasajero</div>
+                  <div className="bpm__name">{p.full_name}</div>
+                  {p.email && <div className="bpm__sub">{p.email}</div>}
+                  {p.phone && <div className="bpm__sub">{p.phone}</div>}
+                </div>
 
-            {/* Tipo de viaje */}
-            <div className="bpm__col">
-              <div className="bpm__label">Viaje</div>
-              <span className="bpm__trip">{TRIP_TYPE_LABELS[p.trip_type] || '—'}</span>
-            </div>
+                <div className="bpm__col">
+                  <div className="bpm__label">Viaje</div>
+                  <span className="bpm__trip">{TRIP_TYPE_LABELS[p.trip_type] || '—'}</span>
+                </div>
 
-            {/* Recogida */}
-            <div className="bpm__col">
-              <div className="bpm__label">Recogida</div>
-              <div className="bpm__point">{p.pickup_point || '—'}</div>
-            </div>
+                <div className="bpm__col">
+                  <div className="bpm__label">Recogida</div>
+                  <div className="bpm__point">{p.pickup_point || '—'}</div>
+                </div>
 
-            {/* Retorno */}
-            <div className="bpm__col">
-              <div className="bpm__label">Retorno</div>
-              <div className="bpm__point">{p.return_point || '—'}</div>
-            </div>
+                <div className="bpm__col">
+                  <div className="bpm__label">Retorno</div>
+                  <div className="bpm__point">{p.return_point || '—'}</div>
+                </div>
 
-            {/* Van — único campo editable */}
-            <div className="bpm__col bpm__col--van">
-              <div className="bpm__label">Van</div>
-              <select
-                className="bpm__select"
-                value={p.assigned_van_id || ''}
-                onChange={(e) => handleReassign(p.id, e.target.value)}
-              >
-                <option value="">Sin asignar</option>
-                {vans.map(van => (
-                  <option key={van.id} value={van.id}>🚐 {van.name}</option>
-                ))}
-              </select>
-            </div>
+                <div className="bpm__col bpm__col--van">
+                  <div className="bpm__label">Van</div>
+                  <select
+                    className="bpm__select"
+                    value={p.assigned_van_id || ''}
+                    onChange={(e) => handleReassign(p.id, e.target.value)}
+                  >
+                    <option value="">Sin asignar</option>
+                    {vans.map(van => (
+                      <option key={van.id} value={van.id}>🚐 {van.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bpm__col bpm__col--edit">
+                  <button
+                    className="adm-btn adm-btn--ghost bpm__edit-btn"
+                    onClick={() => startEdit(p)}
+                    title="Editar pasajero"
+                  >
+                    <Edit2 size={13} /> Editar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Modo edición ── */}
+            {editingId === p.id && (
+              <div className="bpm__edit-row">
+                <div className="bpm__edit-header">
+                  <span className="bpm__num">{i + 1}</span>
+                  <span style={{fontSize:'13px', fontWeight:'600', color:'var(--text)'}}>Editando: {p.full_name}</span>
+                  <button className="adm-btn adm-btn--ghost" onClick={() => setEditingId(null)} style={{marginLeft:'auto', padding:'4px 8px', fontSize:'12px'}}>
+                    <X size={13} /> Cancelar
+                  </button>
+                </div>
+                <div className="bpm__edit-grid">
+                  <div className="adm-field">
+                    <label>Nombre</label>
+                    <input value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} />
+                  </div>
+                  <div className="adm-field">
+                    <label>Email</label>
+                    <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+                  </div>
+                  <div className="adm-field">
+                    <label>Teléfono</label>
+                    <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+                  </div>
+                  <div className="adm-field">
+                    <label>Tipo de viaje</label>
+                    <select value={editForm.trip_type} onChange={e => setEditForm({...editForm, trip_type: e.target.value})}>
+                      <option value="round_trip">Ida y vuelta</option>
+                      <option value="outbound_only">Solo ida</option>
+                      <option value="return_only">Solo vuelta</option>
+                    </select>
+                  </div>
+                  <div className="adm-field">
+                    <label>Punto de recogida</label>
+                    <input value={editForm.pickup_point} onChange={e => setEditForm({...editForm, pickup_point: e.target.value})} />
+                  </div>
+                  <div className="adm-field">
+                    <label>Punto de retorno</label>
+                    <input value={editForm.return_point} onChange={e => setEditForm({...editForm, return_point: e.target.value})} />
+                  </div>
+                </div>
+                <div style={{display:'flex', justifyContent:'flex-end', marginTop:'12px'}}>
+                  <button className="adm-btn adm-btn--primary" onClick={() => saveEdit(p.id)} style={{fontSize:'13px'}}>
+                    <Save size={13} /> Guardar cambios
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
