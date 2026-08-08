@@ -38,7 +38,7 @@
 
 .bpm__row {
   display: grid;
-  grid-template-columns: 24px 1.8fr 1fr 1.2fr 1.2fr 1.2fr;
+  grid-template-columns: 24px 1.8fr 1fr 1.2fr 1.2fr auto;
   align-items: center;
   gap: 12px;
   background: var(--bg-card);
@@ -147,4 +147,57 @@
   }
   .bpm__col { grid-column: 2; }
   .bpm__col--van { grid-column: 1 / -1; }
+}
+
+/* ── Columna editar ────────────────────────────────────────────────────────── */
+
+
+.bpm__col--edit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.bpm__edit-btn {
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Fila de edición ───────────────────────────────────────────────────────── */
+.bpm__edit-row {
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 0;
+}
+
+.bpm__edit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bpm__edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .bpm__row { grid-template-columns: 24px 1fr 1fr; }
+  .bpm__col--edit { grid-column: 1 / -1; justify-content: flex-start; }
+  .bpm__edit-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .bpm__row { grid-template-columns: 24px 1fr; }
+  .bpm__edit-grid { grid-template-columns: 1fr; }
 }

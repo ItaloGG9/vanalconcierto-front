@@ -106,9 +106,6 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
     <div className="bpm">
       <div className="bpm__header">
         <span className="bpm__title">👥 Pasajeros ({passengers.length})</span>
-        {vans.length === 0 && (
-          <span className="bpm__warning">⚠️ Sin vans asignadas al evento</span>
-        )}
       </div>
 
       <div className="bpm__list">
@@ -139,20 +136,6 @@ export default function BookingPassengersManager({ bookingId, eventId, vans: van
                 <div className="bpm__col">
                   <div className="bpm__label">Retorno</div>
                   <div className="bpm__point">{p.return_point || '—'}</div>
-                </div>
-
-                <div className="bpm__col bpm__col--van">
-                  <div className="bpm__label">Van</div>
-                  <select
-                    className="bpm__select"
-                    value={p.assigned_van_id ?? ''}
-                    onChange={(e) => handleReassign(p.id, e.target.value)}
-                  >
-                    <option value="">Sin asignar</option>
-                    {vans.map(van => (
-                      <option key={van.id} value={van.id}>🚐 {van.name}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div className="bpm__col bpm__col--edit">
