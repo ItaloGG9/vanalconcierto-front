@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { X, Calendar, MapPin, Minus, Plus, Copy, Check, ExternalLink } from 'lucide-react'
@@ -31,7 +31,7 @@ export default function EventPanel({ event, onClose }) {
   const [step, setStep]             = useState('info')    // 'info' | 'form' | 'success'
   const [loading, setLoading]       = useState(false)
   const [transferResult, setTransferResult] = useState(null)
-  const [passengers, setPassengers] = useState([])
+  const passengerFormRef = useRef(null)
   const [copiedIndex, setCopiedIndex] = useState(null)
   const [selectedBank, setSelectedBank] = useState(0)
 
@@ -56,15 +56,11 @@ export default function EventPanel({ event, onClose }) {
   }
 
   const handleSubmit = async () => {
-    const allValid = passengers.every(p =>
-      p.full_name && p.email && p.phone &&
-      (p.trip_type === 'return_only'   || p.pickup_point) &&
-      (p.trip_type === 'outbound_only' || p.return_point)
-    )
-    if (!allValid) {
+    if (!passengerFormRef.current?.isValid()) {
       toast.error('Completa todos los campos de los pasajeros')
       return
     }
+    const passengers = passengerFormRef.current.getPassengers()
 
     setLoading(true)
     try {
@@ -209,10 +205,6 @@ export default function EventPanel({ event, onClose }) {
   )
 
   // ── PASO 2: FORM ──────────────────────────────────────────────────────────
-  const handlePassengersChange = useCallback((data) => {
-    setPassengers(data)
-  }, [])
-
   const StepForm = () => (
     <div className="epanel__body">
       <button className="epanel__back" onClick={() => setStep('info')}>← Volver</button>
@@ -241,7 +233,7 @@ export default function EventPanel({ event, onClose }) {
         )}
       </div>
 
-      <PassengerForm quantity={qty} tripType={tripType} onPassengersChange={handlePassengersChange} />
+      <PassengerForm ref={passengerFormRef} quantity={qty} tripType={tripType} />
 
       <button
         className="epanel__next-btn"
