@@ -502,7 +502,8 @@ function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '', description: editing?.description || '',
     pickup_info: editing?.pickup_info || '', event_date: editing?.event_date?.slice(0,16) || '',
-    price: editing?.price || '', original_price: editing?.original_price || '',
+    price: editing?.price || '', price_one_way: editing?.price_one_way || '',
+    original_price: editing?.original_price || '',
     total_capacity: editing?.total_capacity || '', is_round_trip: editing?.is_round_trip ?? true,
     is_active: editing?.is_active ?? true, genre: editing?.genre || 'otro',
   })
@@ -513,7 +514,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
     if (!form.title || !form.price || !form.event_date || !form.total_capacity) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
     try {
-      const payload = { ...form, price: parseFloat(form.price), original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: parseInt(form.total_capacity), event_date: new Date(form.event_date).toISOString() }
+      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: parseInt(form.total_capacity), event_date: new Date(form.event_date).toISOString() }
       let eventId = editing?.id
       if (editing) { await adminUpdateEvent(editing.id, payload); toast.success('Evento actualizado') }
       else { const res = await adminCreateEvent(payload); eventId = res.data.id; toast.success('Evento creado') }
@@ -535,8 +536,16 @@ function EventFormModal({ editing, onClose, onSaved }) {
             <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
             <div className="adm-field"><label>Fecha y hora *</label><input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
             <div className="adm-field"><label>Capacidad Total *</label><input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" /></div>
-            <div className="adm-field"><label>Precio CLP *</label><input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="15000" /></div>
-            <div className="adm-field"><label>Precio original</label><input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" /></div>
+            <div className="adm-field">
+              <label>Precio ida y vuelta CLP *</label>
+              <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="19000" />
+            </div>
+            <div className="adm-field">
+              <label>Precio solo ida / solo vuelta CLP</label>
+              <input type="number" value={form.price_one_way} onChange={e => setForm({...form, price_one_way: e.target.value})} placeholder="16000 (opcional)" />
+              <span style={{fontSize:'11px', color:'var(--text-3)', marginTop:'2px'}}>Si lo dejas vacío, no aparece la opción de solo ida/vuelta</span>
+            </div>
+            <div className="adm-field"><label>Precio original (tachado)</label><input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" /></div>
             <div className="adm-field"><label>Género Musical</label><select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>{GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
             <div className="adm-field adm-field--full"><label>Puntos de recogida</label><PickupTimeSelector value={form.pickup_info} onChange={(v) => setForm({...form, pickup_info: v})} /></div>
             <div className="adm-field adm-field--full"><label>Descripción</label><textarea rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
