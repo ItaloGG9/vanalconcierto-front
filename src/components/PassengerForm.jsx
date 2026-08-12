@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './PassengerForm.css'
 
-// Puntos hardcodeados — evita llamada al API en loop
 const PICKUP_POINTS = [
   { value: 'Peñablanca – Líder, Manuel Montt',                label: 'Peñablanca – Líder, Manuel Montt' },
   { value: 'Villa Alemana – Paradero 7 (frente a la Copec)', label: 'Villa Alemana – Paradero 7 (frente a la Copec)' },
@@ -14,119 +13,125 @@ const PICKUP_POINTS = [
   { value: 'Curacaví – Ruta 68',                              label: 'Curacaví – Ruta 68' },
 ]
 
-export default function PassengerForm({ quantity, onPassengersChange }) {
+function PassengerCard({ passenger, index, tripType, onChange }) {
+  const update = (field, value) => onChange(index, field, value)
+  const showPickup = tripType !== 'return_only'
+  const showReturn = tripType !== 'outbound_only'
+
+  return (
+    <div className="passenger-card">
+      <div className="passenger-card__header">
+        <span className="passenger-card__number">Pasajero #{index + 1}</span>
+      </div>
+
+      <div className="passenger-field">
+        <label>Nombre completo *</label>
+        <input type="text" value={passenger.full_name}
+          onChange={e => update('full_name', e.target.value)}
+          placeholder="Juan Pérez" />
+      </div>
+
+      <div className="passenger-field">
+        <label>Correo electrónico *</label>
+        <input type="email" value={passenger.email}
+          onChange={e => update('email', e.target.value)}
+          placeholder="juan@ejemplo.com" />
+      </div>
+
+      <div className="passenger-field">
+        <label>Teléfono (WhatsApp) *</label>
+        <input type="tel" value={passenger.phone}
+          onChange={e => update('phone', e.target.value)}
+          placeholder="+56912345678" />
+      </div>
+
+      {showPickup && (
+        <div className="passenger-field">
+          <label>Punto de recogida *</label>
+          <select value={passenger.pickup_point}
+            onChange={e => update('pickup_point', e.target.value)}>
+            <option value="">Selecciona un punto</option>
+            {PICKUP_POINTS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {showReturn && (
+        <div className="passenger-field">
+          <label>Punto de retorno *</label>
+          <select value={passenger.return_point}
+            onChange={e => update('return_point', e.target.value)}>
+            <option value="">Selecciona un punto</option>
+            {PICKUP_POINTS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function PassengerForm({ quantity, tripType = 'round_trip', onPassengersChange }) {
   const [passengers, setPassengers] = useState(() =>
     Array.from({ length: quantity }, () => ({
       full_name: '', email: '', phone: '',
-      trip_type: 'round_trip', pickup_point: '', return_point: ''
+      trip_type: tripType, pickup_point: '', return_point: ''
     }))
   )
 
-  // Ajustar cantidad si cambia quantity sin recargar puntos
+  // Ajustar cantidad si cambia
   useEffect(() => {
     setPassengers(prev => {
       if (prev.length === quantity) return prev
       if (prev.length < quantity) {
         return [...prev, ...Array.from({ length: quantity - prev.length }, () => ({
           full_name: '', email: '', phone: '',
-          trip_type: 'round_trip', pickup_point: '', return_point: ''
+          trip_type: tripType, pickup_point: '', return_point: ''
         }))]
       }
       return prev.slice(0, quantity)
     })
   }, [quantity])
 
-  const updatePassenger = (index, field, value) => {
+  // Actualizar trip_type en todos los pasajeros si cambia desde afuera
+  useEffect(() => {
+    setPassengers(prev => prev.map(p => ({
+      ...p,
+      trip_type: tripType,
+      pickup_point: tripType === 'return_only' ? '' : p.pickup_point,
+      return_point: tripType === 'outbound_only' ? '' : p.return_point,
+    })))
+  }, [tripType])
+
+  useEffect(() => {
+    onPassengersChange(passengers)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passengers])
+
+  const handleChange = useCallback((index, field, value) => {
     setPassengers(prev => {
       const updated = [...prev]
       updated[index] = { ...updated[index], [field]: value }
-      if (field === 'trip_type') {
-        if (value === 'return_only')   updated[index].pickup_point = ''
-        if (value === 'outbound_only') updated[index].return_point = ''
-      }
-      // Notificar al padre con los datos actualizados
-      onPassengersChange(updated)
       return updated
     })
-  }
+  }, [])
 
   return (
     <div className="passenger-forms">
       <h3 className="passenger-forms__title">
         Información de pasajeros ({quantity} {quantity === 1 ? 'ticket' : 'tickets'})
       </h3>
-
       {passengers.map((passenger, index) => (
-        <div key={index} className="passenger-card">
-          <div className="passenger-card__header">
-            <span className="passenger-card__number">Pasajero #{index + 1}</span>
-          </div>
-
-          <div className="passenger-field">
-            <label>Nombre completo *</label>
-            <input type="text" value={passenger.full_name}
-              onChange={e => updatePassenger(index, 'full_name', e.target.value)}
-              placeholder="Juan Pérez" />
-          </div>
-
-          <div className="passenger-field">
-            <label>Correo electrónico *</label>
-            <input type="email" value={passenger.email}
-              onChange={e => updatePassenger(index, 'email', e.target.value)}
-              placeholder="juan@ejemplo.com" />
-          </div>
-
-          <div className="passenger-field">
-            <label>Teléfono (WhatsApp) *</label>
-            <input type="tel" value={passenger.phone}
-              onChange={e => updatePassenger(index, 'phone', e.target.value)}
-              placeholder="+56912345678" />
-          </div>
-
-          <div className="passenger-field">
-            <label>Tipo de viaje *</label>
-            <div className="trip-type-options">
-              {[
-                { value: 'round_trip',    label: '🔄 Ida y vuelta' },
-                { value: 'outbound_only', label: '➡️ Solo ida' },
-                { value: 'return_only',   label: '⬅️ Solo vuelta' },
-              ].map(opt => (
-                <label key={opt.value} className="trip-type-option">
-                  <input type="radio" name={`trip_type_${index}`} value={opt.value}
-                    checked={passenger.trip_type === opt.value}
-                    onChange={e => updatePassenger(index, 'trip_type', e.target.value)} />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {passenger.trip_type !== 'return_only' && (
-            <div className="passenger-field">
-              <label>Punto de recogida *</label>
-              <select value={passenger.pickup_point}
-                onChange={e => updatePassenger(index, 'pickup_point', e.target.value)}>
-                <option value="">Selecciona un punto</option>
-                {PICKUP_POINTS.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {passenger.trip_type !== 'outbound_only' && (
-            <div className="passenger-field">
-              <label>Punto de retorno *</label>
-              <select value={passenger.return_point}
-                onChange={e => updatePassenger(index, 'return_point', e.target.value)}>
-                <option value="">Selecciona un punto</option>
-                {PICKUP_POINTS.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+        <PassengerCard
+          key={index}
+          passenger={passenger}
+          index={index}
+          tripType={tripType}
+          onChange={handleChange}
+        />
       ))}
     </div>
   )

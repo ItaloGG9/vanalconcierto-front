@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { X, Calendar, MapPin, Minus, Plus, Copy, Check, ExternalLink } from 'lucide-react'
@@ -209,6 +209,10 @@ export default function EventPanel({ event, onClose }) {
   )
 
   // ── PASO 2: FORM ──────────────────────────────────────────────────────────
+  const handlePassengersChange = useCallback((data) => {
+    setPassengers(data)
+  }, [])
+
   const StepForm = () => (
     <div className="epanel__body">
       <button className="epanel__back" onClick={() => setStep('info')}>← Volver</button>
@@ -237,7 +241,7 @@ export default function EventPanel({ event, onClose }) {
         )}
       </div>
 
-      <PassengerForm quantity={qty} onPassengersChange={setPassengers} />
+      <PassengerForm quantity={qty} tripType={tripType} onPassengersChange={handlePassengersChange} />
 
       <button
         className="epanel__next-btn"
