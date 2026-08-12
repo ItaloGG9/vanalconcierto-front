@@ -345,7 +345,7 @@ export default function EventPanel({ event, onClose }) {
   )
 
   return (
-    <div className="epanel-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="epanel-overlay">
       <div className="epanel">
         <button className="epanel__close" onClick={onClose} aria-label="Cerrar"><X size={20} /></button>
         {step === 'info'    && <StepInfo />}
