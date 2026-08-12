@@ -288,7 +288,13 @@ function BookingsTab() {
   const load = () => {
     setLoading(true)
     adminGetBookings(filter !== 'all' ? { status: filter } : {})
-      .then(r => setBookings(r.data))
+      .then(r => {
+        // En "todos" ocultar rechazados — solo se ven en filtro "rechazadas"
+        const data = filter === 'all'
+          ? r.data.filter(b => b.payment_status !== 'rejected')
+          : r.data
+        setBookings(data)
+      })
       .catch(() => toast.error('Error cargando reservas'))
       .finally(() => setLoading(false))
   }
