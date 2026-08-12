@@ -71,7 +71,7 @@ export default function EventPanel({ event, onClose }) {
       const payload = {
         event_id: event.id,
         passengers,
-        payment_method: 'transfer',
+        payment_method: payMethod === 'mp_link' ? 'transfer' : 'transfer',
         payment_plan: paymentPlan,
         trip_type: tripType,
         notification_method: 'email'
@@ -259,7 +259,7 @@ export default function EventPanel({ event, onClose }) {
       {paymentPlan === '50%' ? (
         <p>Tus tickets QR ya están en camino a tu email. <strong>Recuerda pagar ${pending.toLocaleString('es-CL')} CLP durante el viaje.</strong></p>
       ) : (
-        <p>Tienes <strong>24 horas</strong> para pagar <strong>${toPay.toLocaleString('es-CL')} CLP</strong>. Recibirás tus tickets al confirmar el pago.</p>
+        <p>Tienes entre <strong>24 a 48 horas</strong> para que revisen tu pago de <strong>${toPay.toLocaleString('es-CL')} CLP</strong>. Una vez confirmado recibirás tus tickets QR.</p>
       )}
 
       {/* Opción MP Link */}
@@ -267,7 +267,8 @@ export default function EventPanel({ event, onClose }) {
         <div className="epanel__mp-link-card">
           <div className="epanel__mp-link-title">💳 Pagar con Mercado Pago</div>
           <p className="epanel__mp-link-desc">
-            Entra al link, ingresa <strong>${toPay.toLocaleString('es-CL')} CLP</strong> como monto y completa el pago.
+            Entra al link e ingresa <strong>${toPay.toLocaleString('es-CL')} CLP</strong> como monto.
+            {paymentPlan === '50%' && <span> El resto (<strong>${pending.toLocaleString('es-CL')} CLP</strong>) lo pagas durante el viaje.</span>}
           </p>
           <a
             href={MP_LINK}
@@ -275,7 +276,7 @@ export default function EventPanel({ event, onClose }) {
             rel="noreferrer"
             className="epanel__mp-link-btn"
           >
-            <ExternalLink size={16} /> Ir a pagar → {MP_LINK}
+            <ExternalLink size={16} /> Ir a pagar ${toPay.toLocaleString('es-CL')} CLP →
           </a>
         </div>
       )}
