@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react'
 import './PassengerForm.css'
 
 const PICKUP_POINTS = [
@@ -14,7 +14,6 @@ const PICKUP_POINTS = [
 ]
 
 function PassengerCard({ passenger, index, tripType, onChange }) {
-  const update = (field, value) => onChange(index, field, value)
   const showPickup = tripType !== 'return_only'
   const showReturn = tripType !== 'outbound_only'
 
@@ -27,21 +26,21 @@ function PassengerCard({ passenger, index, tripType, onChange }) {
       <div className="passenger-field">
         <label>Nombre completo *</label>
         <input type="text" value={passenger.full_name}
-          onChange={e => update('full_name', e.target.value)}
+          onChange={e => onChange(index, 'full_name', e.target.value)}
           placeholder="Juan Pérez" />
       </div>
 
       <div className="passenger-field">
         <label>Correo electrónico *</label>
         <input type="email" value={passenger.email}
-          onChange={e => update('email', e.target.value)}
+          onChange={e => onChange(index, 'email', e.target.value)}
           placeholder="juan@ejemplo.com" />
       </div>
 
       <div className="passenger-field">
         <label>Teléfono (WhatsApp) *</label>
         <input type="tel" value={passenger.phone}
-          onChange={e => update('phone', e.target.value)}
+          onChange={e => onChange(index, 'phone', e.target.value)}
           placeholder="+56912345678" />
       </div>
 
@@ -49,7 +48,7 @@ function PassengerCard({ passenger, index, tripType, onChange }) {
         <div className="passenger-field">
           <label>Punto de recogida *</label>
           <select value={passenger.pickup_point}
-            onChange={e => update('pickup_point', e.target.value)}>
+            onChange={e => onChange(index, 'pickup_point', e.target.value)}>
             <option value="">Selecciona un punto</option>
             {PICKUP_POINTS.map(p => (
               <option key={p.value} value={p.value}>{p.label}</option>
@@ -62,7 +61,7 @@ function PassengerCard({ passenger, index, tripType, onChange }) {
         <div className="passenger-field">
           <label>Punto de retorno *</label>
           <select value={passenger.return_point}
-            onChange={e => update('return_point', e.target.value)}>
+            onChange={e => onChange(index, 'return_point', e.target.value)}>
             <option value="">Selecciona un punto</option>
             {PICKUP_POINTS.map(p => (
               <option key={p.value} value={p.value}>{p.label}</option>
@@ -74,7 +73,9 @@ function PassengerCard({ passenger, index, tripType, onChange }) {
   )
 }
 
-export default function PassengerForm({ quantity, tripType = 'round_trip', onPassengersChange }) {
+// Usamos forwardRef + useImperativeHandle para que el padre lea los datos al hacer submit
+// sin necesidad de callbacks que causen re-renders
+const PassengerForm = forwardRef(function PassengerForm({ quantity, tripType = 'round_trip' }, ref) {
   const [passengers, setPassengers] = useState(() =>
     Array.from({ length: quantity }, () => ({
       full_name: '', email: '', phone: '',
@@ -82,7 +83,17 @@ export default function PassengerForm({ quantity, tripType = 'round_trip', onPas
     }))
   )
 
-  // Ajustar cantidad si cambia
+  // Exponer método getPassengers al padre via ref
+  useImperativeHandle(ref, () => ({
+    getPassengers: () => passengers.map(p => ({ ...p, trip_type: tripType })),
+    isValid: () => passengers.every(p =>
+      p.full_name && p.email && p.phone &&
+      (tripType === 'return_only'   || p.pickup_point) &&
+      (tripType === 'outbound_only' || p.return_point)
+    )
+  }), [passengers, tripType])
+
+  // Ajustar cantidad
   useEffect(() => {
     setPassengers(prev => {
       if (prev.length === quantity) return prev
@@ -95,21 +106,6 @@ export default function PassengerForm({ quantity, tripType = 'round_trip', onPas
       return prev.slice(0, quantity)
     })
   }, [quantity])
-
-  // Actualizar trip_type en todos los pasajeros si cambia desde afuera
-  useEffect(() => {
-    setPassengers(prev => prev.map(p => ({
-      ...p,
-      trip_type: tripType,
-      pickup_point: tripType === 'return_only' ? '' : p.pickup_point,
-      return_point: tripType === 'outbound_only' ? '' : p.return_point,
-    })))
-  }, [tripType])
-
-  useEffect(() => {
-    onPassengersChange(passengers)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [passengers])
 
   const handleChange = useCallback((index, field, value) => {
     setPassengers(prev => {
@@ -135,4 +131,6 @@ export default function PassengerForm({ quantity, tripType = 'round_trip', onPas
       ))}
     </div>
   )
-}
+})
+
+export default PassengerForm
