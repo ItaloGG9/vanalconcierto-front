@@ -236,6 +236,7 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
       <div className="adm-booking-card-row">
         <span className="adm-booking-card-label">Método</span>
         <span className="adm-method">{booking.payment_method === 'mercadopago' ? '💳 MP' : booking.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span>
+        {booking.payment_plan === '50%' && <span style={{fontSize:'10px',color:'#ff6b35',marginLeft:'4px'}}>· 2 partes</span>}
       </div>
       {/* Van selector en móvil */}
       <div style={{marginTop:'8px'}}>
@@ -433,10 +434,23 @@ function BookingsTab() {
                           <td>{b.quantity}</td>
                           <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
                           <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
-                          <td style={{color: pending > 0 ? '#ff6b35' : 'var(--text-3)'}}>
-                            {pending > 0 ? `$${pending.toLocaleString('es-CL')}` : '—'}
+                          <td>
+                            {pending > 0 ? (
+                              <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                <span style={{color:'#ff6b35',fontWeight:'600'}}>${'$'}{pending.toLocaleString('es-CL')}</span>
+                                <button
+                                  className="adm-btn adm-btn--success"
+                                  style={{padding:'3px 7px',fontSize:'11px'}}
+                                  onClick={() => confirm(b.id, true)}
+                                  title="Confirmar segundo pago"
+                                >✓</button>
+                              </div>
+                            ) : <span style={{color:'var(--text-3)'}}>—</span>}
                           </td>
-                          <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></td>
+                          <td>
+                            <div><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></div>
+                            {b.payment_plan === '50%' && <div style={{fontSize:'10px',color:'#ff6b35',fontFamily:'var(--font-mono)',marginTop:'2px'}}>2 partes</div>}
+                          </td>
                           <td><StatusBadge status={b.payment_status} /></td>
                           <td>
                             <div className="adm-actions">
