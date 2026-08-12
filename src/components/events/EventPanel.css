@@ -482,3 +482,161 @@
     to { transform: translateY(0); }
   }
 }
+
+/* Agregar al final de EventPanel.css */
+
+/* ── Selector tipo de viaje ────────────────────────────────────────────────── */
+.epanel__trip-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.epanel__trip-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+}
+.epanel__trip-btn:hover { border-color: var(--border-2); }
+.epanel__trip-btn--active {
+  border-color: var(--accent);
+  background: rgba(245,197,24,0.06);
+}
+
+.epanel__trip-icon { font-size: 18px; flex-shrink: 0; }
+.epanel__trip-label { flex: 1; font-size: 14px; font-weight: 600; }
+.epanel__trip-price {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+/* ── Planes de pago ────────────────────────────────────────────────────────── */
+.epanel__payment-plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.epanel__plan-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: inherit;
+}
+.epanel__plan-btn:hover { border-color: var(--border-2); }
+.epanel__plan-btn--active {
+  border-color: var(--accent);
+  background: rgba(245,197,24,0.06);
+}
+
+.epanel__plan-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.epanel__plan-amount {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.epanel__plan-desc {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ── Resumen de pago en paso 2 ─────────────────────────────────────────────── */
+.epanel__pay-summary {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.epanel__pay-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.epanel__pay-row strong { color: var(--text); }
+
+.epanel__pay-row--highlight {
+  font-size: 15px;
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  color: var(--text);
+}
+.epanel__pay-row--highlight strong { color: var(--accent); }
+
+.epanel__pay-row--pending strong { color: #ff6b35; }
+
+/* ── Card MP Link ──────────────────────────────────────────────────────────── */
+.epanel__mp-link-card {
+  width: 100%;
+  background: rgba(0, 158, 227, 0.06);
+  border: 1px solid rgba(0, 158, 227, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.epanel__mp-link-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.epanel__mp-link-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.epanel__mp-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #009EE3;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+  justify-content: center;
+}
+.epanel__mp-link-btn:hover { background: #0085c2; transform: translateY(-1px); }
+
+@media (max-width: 480px) {
+  .epanel__payment-plans { grid-template-columns: 1fr; }
+  .epanel__trip-btn { padding: 10px 12px; }
+}
