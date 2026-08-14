@@ -35,7 +35,6 @@ const GENRES = [
   { id: 'latin',       label: '💃 Latin' },
 ]
 
-
 const PICKUP_POINTS_LIST = [
   'Peñablanca – Líder, Manuel Montt',
   'Villa Alemana – Paradero 7 (frente a la Copec)',
@@ -60,7 +59,6 @@ function StatusBadge({ status }) {
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
-// ── CELDA VAN: pasajeros + selector directamente en la tabla ──────────────────
 function VanAssignCell({ bookingId, eventId, vans }) {
   const [passengers, setPassengers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -111,7 +109,6 @@ function VanAssignCell({ bookingId, eventId, vans }) {
   )
 }
 
-// ── MODAL INGRESO MANUAL ──────────────────────────────────────────────────────
 function ManualPassengerModal({ events, onClose, onSaved }) {
   const [form, setForm] = useState({
     event_id: '', customer_name: '', customer_email: '', customer_phone: '',
@@ -209,10 +206,10 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
   )
 }
 
-// ── BOOKING CARD MÓVIL ────────────────────────────────────────────────────────
-function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject, onResend, eventVans }) {
-  const pending = Math.max(0, Number(booking.total_price) - Number(booking.paid_amount || booking.total_price))
-  const paid = Number(booking.paid_amount || booking.total_price)
+function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject, onResend, onConfirmPending, eventVans }) {
+  const pending = Math.max(0, Number(booking.total_price) - Number(booking.paid_amount ?? booking.total_price))
+  const paid = Number(booking.paid_amount ?? booking.total_price)
+  const isMpReserved = booking.payment_method === 'mercadopago' && booking.payment_status === 'reserved'
 
   return (
     <div className="adm-booking-card">
@@ -231,14 +228,27 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         <div style={{ flex: 1 }}><span className="adm-booking-card-label">Cupos</span><div className="adm-booking-card-value">{booking.quantity}</div></div>
         <div style={{ flex: 1 }}><span className="adm-booking-card-label">Total</span><div className="adm-booking-card-value">${Number(booking.total_price).toLocaleString('es-CL')}</div></div>
         <div style={{ flex: 1 }}><span className="adm-booking-card-label">Pagado</span><div className="adm-booking-card-value" style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</div></div>
-        {pending > 0 && <div style={{ flex: 1 }}><span className="adm-booking-card-label">Pendiente</span><div className="adm-booking-card-value" style={{color:'#ff6b35'}}>${pending.toLocaleString('es-CL')}</div></div>}
+        {pending > 0 && (
+          <div style={{ flex: 1 }}>
+            <span className="adm-booking-card-label">Pendiente</span>
+            <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+              <span className="adm-booking-card-value" style={{
+                color: Number(booking.paid_amount ?? 0) >= Number(booking.total_price) ? '#22c55e' : '#ff6b35'
+              }}>${pending.toLocaleString('es-CL')}</span>
+              {Number(booking.paid_amount ?? 0) < Number(booking.total_price) && (
+                <button className="adm-btn adm-btn--success" style={{padding:'2px 6px',fontSize:'10px'}} onClick={onConfirmPending} title="Confirmar segundo pago">✓</button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <div className="adm-booking-card-row">
         <span className="adm-booking-card-label">Método</span>
-        <span className="adm-method">{booking.payment_method === 'mercadopago' ? '💳 MP' : booking.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span>
-        {booking.payment_plan === '50%' && <span style={{fontSize:'10px',color:'#ff6b35',marginLeft:'4px'}}>· 2 partes</span>}
+        <span className="adm-method">
+          {booking.payment_method === 'mercadopago' ? '💳 MP' : booking.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}
+          {booking.payment_plan === '50%' && <span style={{fontSize:'10px',color:'#ff6b35',marginLeft:'4px'}}>· 2 partes</span>}
+        </span>
       </div>
-      {/* Van selector en móvil */}
       <div style={{marginTop:'8px'}}>
         <div className="adm-booking-card-label" style={{marginBottom:'6px'}}>Asignación de van</div>
         <VanAssignCell bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} />
@@ -247,10 +257,11 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
           {expanded ? '▼ Ocultar info' : '▶ Ver detalle'}
         </button>
-        {booking.payment_status === 'confirmed' && (
+        {(booking.payment_status === 'confirmed' || booking.payment_status === 'reserved') && (
           <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets"><Send size={14} /></button>
         )}
-        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && booking.payment_method !== 'mercadopago' && (
+        {/* Confirmar/rechazar solo para transferencias pendientes, NO para MP que ya procesó */}
+        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && !isMpReserved && (
           <>
             <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
             <button className="adm-btn adm-btn--danger" onClick={() => onReject()} title="Rechazar"><X size={14} /></button>
@@ -266,7 +277,6 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
   )
 }
 
-// ── BOOKINGS TAB ──────────────────────────────────────────────────────────────
 function BookingsTab() {
   const [bookings, setBookings] = useState([])
   const [events, setEvents] = useState([])
@@ -289,7 +299,6 @@ function BookingsTab() {
     setLoading(true)
     adminGetBookings(filter !== 'all' ? { status: filter } : {})
       .then(r => {
-        // En "todos" ocultar rechazados — solo se ven en filtro "rechazadas"
         const data = filter === 'all'
           ? r.data.filter(b => b.payment_status !== 'rejected')
           : r.data
@@ -305,9 +314,17 @@ function BookingsTab() {
   const confirm = async (id, approved) => {
     try {
       await adminConfirmTransfer({ booking_id: id, approved })
-      toast.success(approved ? 'Transferencia confirmada ✅' : 'Transferencia rechazada')
+      toast.success(approved ? 'Confirmado ✅' : 'Rechazado')
       load()
     } catch { toast.error('Error al procesar') }
+  }
+
+  const confirmPending = async (id) => {
+    try {
+      await adminConfirmTransfer({ booking_id: id, approved: true })
+      toast.success('Segundo pago confirmado ✅')
+      load()
+    } catch { toast.error('Error al confirmar') }
   }
 
   const resend = async (id) => {
@@ -325,7 +342,6 @@ function BookingsTab() {
     } catch {}
   }
 
-  // Precargar vans de todos los eventos de las reservas visibles
   useEffect(() => {
     bookings.forEach(b => { if (!eventVans[b.event_id]) loadEventVans(b.event_id) })
   }, [bookings])
@@ -420,6 +436,7 @@ function BookingsTab() {
                   {bookingsFiltrados.map(b => {
                     const paid = Number(b.paid_amount ?? b.total_price)
                     const pending = Math.max(0, Number(b.total_price) - paid)
+                    const isMpReserved = b.payment_method === 'mercadopago' && b.payment_status === 'reserved'
                     return (
                       <>
                         <tr key={b.id}>
@@ -429,13 +446,8 @@ function BookingsTab() {
                             <div className="adm-cell-sub">{b.customer_email}</div>
                           </td>
                           <td><div className="adm-cell-sub">{getNombreEvento(b.event_id)}</div></td>
-                          {/* ← NUEVA CELDA: selector de van por pasajero */}
                           <td>
-                            <VanAssignCell
-                              bookingId={b.id}
-                              eventId={b.event_id}
-                              vans={eventVans[b.event_id] || []}
-                            />
+                            <VanAssignCell bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
                           </td>
                           <td>{b.quantity}</td>
                           <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
@@ -443,31 +455,41 @@ function BookingsTab() {
                           <td>
                             {pending > 0 ? (
                               <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                                <span style={{color:'#ff6b35',fontWeight:'600'}}>${'$'}{pending.toLocaleString('es-CL')}</span>
-                                {/* Botón para confirmar segundo pago — solo si no está ya fully confirmed */}
-                                {b.payment_status !== 'confirmed' && (
+                                {/* Verde = segundo pago confirmado, rojo = pendiente de pago */}
+                                <span style={{
+                                  color: b.paid_amount >= b.total_price ? '#22c55e' : '#ff6b35',
+                                  fontWeight:'600'
+                                }}>
+                                  ${pending.toLocaleString('es-CL')}
+                                </span>
+                                {/* Botón ✓ solo si aún hay monto pendiente real */}
+                                {Number(b.paid_amount ?? 0) < Number(b.total_price) && (
                                   <button
                                     className="adm-btn adm-btn--success"
                                     style={{padding:'3px 7px',fontSize:'11px'}}
-                                    onClick={async () => { await confirm(b.id, true); load() }}
-                                    title="Confirmar segundo pago"
+                                    onClick={() => confirmPending(b.id)}
+                                    title="Confirmar segundo pago recibido"
                                   >✓</button>
                                 )}
                               </div>
                             ) : <span style={{color:'var(--text-3)'}}>—</span>}
                           </td>
                           <td>
-                            <div><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></div>
+                            <div>
+                              <span className="adm-method">
+                                {b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}
+                              </span>
+                            </div>
                             {b.payment_plan === '50%' && <div style={{fontSize:'10px',color:'#ff6b35',fontFamily:'var(--font-mono)',marginTop:'2px'}}>2 partes</div>}
                           </td>
                           <td><StatusBadge status={b.payment_status} /></td>
                           <td>
                             <div className="adm-actions">
-                              {b.payment_status === 'confirmed' && (
+                              {(b.payment_status === 'confirmed' || (b.payment_status === 'reserved' && isMpReserved)) && (
                                 <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets"><Send size={14} /></button>
                               )}
-                              {/* Solo mostrar confirmar/rechazar para transferencias pendientes, no para MP que ya procesó */}
-                              {(b.payment_status === 'reserved' || b.payment_status === 'pending') && b.payment_method !== 'mercadopago' && (
+                              {/* Confirmar/rechazar solo para transferencias, NO para MP reservado */}
+                              {(b.payment_status === 'reserved' || b.payment_status === 'pending') && !isMpReserved && (
                                 <>
                                   <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
                                   <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
@@ -506,6 +528,7 @@ function BookingsTab() {
                   onConfirm={() => confirm(b.id, true)}
                   onReject={() => confirm(b.id, false)}
                   onResend={() => resend(b.id)}
+                  onConfirmPending={() => confirmPending(b.id)}
                   eventVans={eventVans[b.event_id] || []}
                 />
               ))}
@@ -521,7 +544,6 @@ function BookingsTab() {
   )
 }
 
-// ── EVENTS TAB ────────────────────────────────────────────────────────────────
 function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '', description: editing?.description || '',
@@ -567,7 +589,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
             <div className="adm-field">
               <label>Precio solo ida / solo vuelta CLP</label>
               <input type="number" value={form.price_one_way} onChange={e => setForm({...form, price_one_way: e.target.value})} placeholder="16000 (opcional)" />
-              <span style={{fontSize:'11px', color:'var(--text-3)', marginTop:'2px'}}>Si lo dejas vacío, no aparece la opción de solo ida/vuelta</span>
+              <span style={{fontSize:'11px',color:'var(--text-3)',marginTop:'2px'}}>Si lo dejas vacío, no aparece la opción de solo ida/vuelta</span>
             </div>
             <div className="adm-field"><label>Precio original (tachado)</label><input type="number" value={form.original_price} onChange={e => setForm({...form, original_price: e.target.value})} placeholder="20000" /></div>
             <div className="adm-field"><label>Género Musical</label><select value={form.genre} onChange={e => setForm({...form, genre: e.target.value})}>{GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
@@ -671,7 +693,7 @@ function EventsTab() {
         {search && <button className="adm-search__clear" onClick={() => setSearch('')}>✕</button>}
       </div>
       <div className="adm-events-list">
-        {filteredEvents.length === 0 && <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px'}}>No se encontraron eventos para "{search}"</div>}
+        {filteredEvents.length === 0 && <div style={{textAlign:'center',color:'var(--text-3)',padding:'32px'}}>No se encontraron eventos</div>}
         {filteredEvents.map(ev => {
           const vans = eventVans[ev.id] || []
           const available = ev.available_capacity ?? 0
@@ -680,7 +702,7 @@ function EventsTab() {
               <div className="adm-event-img">{ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}</div>
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
-                <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos disponibles{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
+                <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
                 {vans.length > 0 && <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>}
               </div>
               <div className="adm-event-status">{ev.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>}</div>
