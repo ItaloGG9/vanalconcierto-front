@@ -250,7 +250,7 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         {booking.payment_status === 'confirmed' && (
           <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets"><Send size={14} /></button>
         )}
-        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && (
+        {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && booking.payment_method !== 'mercadopago' && (
           <>
             <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
             <button className="adm-btn adm-btn--danger" onClick={() => onReject()} title="Rechazar"><X size={14} /></button>
@@ -444,12 +444,15 @@ function BookingsTab() {
                             {pending > 0 ? (
                               <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
                                 <span style={{color:'#ff6b35',fontWeight:'600'}}>${'$'}{pending.toLocaleString('es-CL')}</span>
-                                <button
-                                  className="adm-btn adm-btn--success"
-                                  style={{padding:'3px 7px',fontSize:'11px'}}
-                                  onClick={() => confirm(b.id, true)}
-                                  title="Confirmar segundo pago"
-                                >✓</button>
+                                {/* Botón para confirmar segundo pago — solo si no está ya fully confirmed */}
+                                {b.payment_status !== 'confirmed' && (
+                                  <button
+                                    className="adm-btn adm-btn--success"
+                                    style={{padding:'3px 7px',fontSize:'11px'}}
+                                    onClick={async () => { await confirm(b.id, true); load() }}
+                                    title="Confirmar segundo pago"
+                                  >✓</button>
+                                )}
                               </div>
                             ) : <span style={{color:'var(--text-3)'}}>—</span>}
                           </td>
@@ -463,7 +466,8 @@ function BookingsTab() {
                               {b.payment_status === 'confirmed' && (
                                 <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets"><Send size={14} /></button>
                               )}
-                              {(b.payment_status === 'reserved' || b.payment_status === 'pending') && (
+                              {/* Solo mostrar confirmar/rechazar para transferencias pendientes, no para MP que ya procesó */}
+                              {(b.payment_status === 'reserved' || b.payment_status === 'pending') && b.payment_method !== 'mercadopago' && (
                                 <>
                                   <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
                                   <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
