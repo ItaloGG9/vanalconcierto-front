@@ -214,8 +214,6 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
   )
 }
 
-
-// ── MODAL CANCELAR RESERVA ────────────────────────────────────────────────────
 function CancelBookingModal({ booking, onClose, onCancelled }) {
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
@@ -251,7 +249,6 @@ function CancelBookingModal({ booking, onClose, onCancelled }) {
               {paid > 0 && <span style={{color:'#f59e0b',marginLeft:'8px'}}>→ pasará a reembolso pendiente</span>}
             </div>
           </div>
-
           <div className="adm-field">
             <label>Motivo de cancelación (se incluye en el email al cliente)</label>
             <textarea
@@ -262,7 +259,6 @@ function CancelBookingModal({ booking, onClose, onCancelled }) {
               style={{width:'100%',background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'10px',color:'var(--text)',fontSize:'14px',resize:'vertical'}}
             />
           </div>
-
           {paid > 0 && (
             <div style={{marginTop:'12px',padding:'12px',background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.3)',borderRadius:'8px',fontSize:'13px',color:'var(--text-3)'}}>
               💡 Como el cliente pagó <strong style={{color:'var(--text)'}}>${paid.toLocaleString('es-CL')} CLP</strong>, la reserva pasará automáticamente a la tab de Reembolsos.
@@ -306,9 +302,7 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
           <div style={{ flex: 1 }}>
             <span className="adm-booking-card-label">Pendiente</span>
             <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-              <span className="adm-booking-card-value" style={{
-                color: Number(booking.paid_amount ?? 0) >= Number(booking.total_price) ? '#22c55e' : '#ff6b35'
-              }}>${pending.toLocaleString('es-CL')}</span>
+              <span className="adm-booking-card-value" style={{color: Number(booking.paid_amount ?? 0) >= Number(booking.total_price) ? '#22c55e' : '#ff6b35'}}>${pending.toLocaleString('es-CL')}</span>
               {Number(booking.paid_amount ?? 0) < Number(booking.total_price) && (
                 <button className="adm-btn adm-btn--success" style={{padding:'2px 6px',fontSize:'10px'}} onClick={onConfirmPending} title="Confirmar segundo pago">✓</button>
               )}
@@ -954,7 +948,6 @@ function RefundsTab() {
           {refunds.filter(r => r.refund_status === 'pending').length} pendientes
         </span>
       </div>
-
       <div className="adm-filters-container">
         <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
           <option value="pending">⏳ Pendientes</option>
@@ -962,21 +955,13 @@ function RefundsTab() {
           <option value="all">Todos</option>
         </select>
       </div>
-
       {loading ? <div className="adm-loading">Cargando...</div> : (
         <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr>
-                <th>Cliente</th>
-                <th>Evento</th>
-                <th>Total</th>
-                <th>Pagado</th>
-                <th>A reembolsar</th>
-                <th>Método</th>
-                <th>Estado</th>
-                <th>Notas</th>
-                <th>Acción</th>
+                <th>Cliente</th><th>Evento</th><th>Total</th><th>Pagado</th>
+                <th>A reembolsar</th><th>Método</th><th>Estado</th><th>Notas</th><th>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -997,43 +982,23 @@ function RefundsTab() {
                     </td>
                     <td>
                       <div className="adm-cell-main">{b.events?.title || '—'}</div>
-                      {b.events?.is_suspended && (
-                        <div className="adm-cell-sub" style={{color:'#ef4444',fontSize:'11px'}}>⚠️ Suspendido</div>
-                      )}
+                      {b.events?.is_suspended && <div className="adm-cell-sub" style={{color:'#ef4444',fontSize:'11px'}}>⚠️ Suspendido</div>}
                     </td>
                     <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
                     <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
                     <td style={{color:'#f59e0b',fontWeight:'600'}}>${paid.toLocaleString('es-CL')}</td>
-                    <td>
-                      <span className="adm-method">
-                        {b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}
-                      </span>
-                    </td>
+                    <td><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></td>
                     <td>
                       <StatusBadge status={isPending ? 'pending' : 'refunded'} />
-                      {b.refunded_at && (
-                        <div className="adm-cell-sub">{new Date(b.refunded_at).toLocaleDateString('es-CL')}</div>
-                      )}
+                      {b.refunded_at && <div className="adm-cell-sub">{new Date(b.refunded_at).toLocaleDateString('es-CL')}</div>}
                     </td>
                     <td>
                       {isPending ? (
-                        <input
-                          placeholder="Nota opcional"
-                          value={notes[b.id] || ''}
-                          onChange={e => setNotes(prev => ({...prev, [b.id]: e.target.value}))}
-                          style={{width:'120px',fontSize:'12px',background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'6px',padding:'4px 8px',color:'var(--text)'}}
-                        />
-                      ) : (
-                        <span style={{fontSize:'12px',color:'var(--text-3)'}}>{b.refund_notes || '—'}</span>
-                      )}
+                        <input placeholder="Nota opcional" value={notes[b.id] || ''} onChange={e => setNotes(prev => ({...prev, [b.id]: e.target.value}))}
+                          style={{width:'120px',fontSize:'12px',background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'6px',padding:'4px 8px',color:'var(--text)'}} />
+                      ) : <span style={{fontSize:'12px',color:'var(--text-3)'}}>{b.refund_notes || '—'}</span>}
                     </td>
-                    <td>
-                      {isPending && (
-                        <button className="adm-btn adm-btn--success" onClick={() => markRefunded(b.id)}>
-                          ✓ Confirmar
-                        </button>
-                      )}
-                    </td>
+                    <td>{isPending && <button className="adm-btn adm-btn--success" onClick={() => markRefunded(b.id)}>✓ Confirmar</button>}</td>
                   </tr>
                 )
               })}
@@ -1041,23 +1006,23 @@ function RefundsTab() {
           </table>
         </div>
       )}
-
       <div style={{marginTop:'20px',padding:'16px',background:'var(--bg-2)',borderRadius:'10px',fontSize:'13px',color:'var(--text-3)',lineHeight:'1.7'}}>
         <strong style={{color:'var(--text)'}}>💡 Flujo de reembolso:</strong><br/>
-        1. Ve a <strong>Eventos</strong> y presiona <strong>⚠️ Suspender</strong> en el evento cancelado.<br/>
+        1. Ve a <strong>Eventos</strong> y presiona <strong>⚠️ Suspender</strong>.<br/>
         2. Todas las reservas confirmadas aparecen aquí como pendientes.<br/>
-        3. Devuelve el dinero manualmente por transferencia o MP al cliente.<br/>
-        4. Marca <strong>✓ Confirmar</strong> para registrar que se hizo el reembolso.
+        3. Devuelve el dinero manualmente al cliente.<br/>
+        4. Marca <strong>✓ Confirmar</strong> para registrar el reembolso.
       </div>
     </div>
   )
 }
 
-
-// ── ARCHIVED TAB ──────────────────────────────────────────────────────────────
 function ArchivedTab() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [expandedEvents, setExpandedEvents] = useState([])
+  const [eventPassengers, setEventPassengers] = useState({})
+  const [loadingPassengers, setLoadingPassengers] = useState({})
 
   useEffect(() => {
     adminGetArchivedEvents()
@@ -1074,6 +1039,46 @@ function ArchivedTab() {
     } catch { toast.error('Error al restaurar') }
   }
 
+  const toggleExpand = async (eventId) => {
+    const isExpanded = expandedEvents.includes(eventId)
+    if (isExpanded) {
+      setExpandedEvents(prev => prev.filter(id => id !== eventId))
+      return
+    }
+    setExpandedEvents(prev => [...prev, eventId])
+    if (eventPassengers[eventId]) return
+
+    setLoadingPassengers(prev => ({...prev, [eventId]: true}))
+    try {
+      const token = localStorage.getItem('vac_token')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/bookings/admin/all?event_id=${eventId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      const bookings = await res.json()
+      const allPassengers = []
+      for (const b of bookings) {
+        const pRes = await adminGetBookingPassengers(b.id)
+        const ps = (pRes.data || []).map(p => ({
+          ...p,
+          booking_customer: b.customer_name,
+          booking_paid: b.paid_amount ?? b.total_price,
+          booking_total: b.total_price,
+          booking_method: b.payment_method,
+        }))
+        allPassengers.push(...ps)
+      }
+      setEventPassengers(prev => ({...prev, [eventId]: allPassengers}))
+    } catch { toast.error('Error cargando pasajeros') }
+    finally { setLoadingPassengers(prev => ({...prev, [eventId]: false})) }
+  }
+
+  const tripLabel = (t) => {
+    if (t === 'outbound_only') return 'Solo ida'
+    if (t === 'return_only') return 'Solo vuelta'
+    return 'Ida y vuelta'
+  }
+
   return (
     <div className="adm-tab">
       <div className="adm-tab__header">
@@ -1083,7 +1088,7 @@ function ArchivedTab() {
 
       <div style={{padding:'12px 16px',background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'10px',fontSize:'13px',color:'var(--text-3)',marginBottom:'20px',lineHeight:'1.6'}}>
         <strong style={{color:'var(--text)'}}>📦 Eventos archivados automáticamente</strong><br/>
-        Los eventos se archivan automáticamente 24 horas después de su fecha. Puedes restaurarlos si es necesario.
+        Los eventos se archivan 24 horas después de su fecha. Haz click en ▶ para ver los pasajeros.
       </div>
 
       {loading ? <div className="adm-loading">Cargando...</div> : events.length === 0 ? (
@@ -1096,6 +1101,7 @@ function ArchivedTab() {
           <table className="adm-table">
             <thead>
               <tr>
+                <th style={{width:'40px'}}></th>
                 <th>Evento</th>
                 <th>Fecha</th>
                 <th>Archivado</th>
@@ -1106,35 +1112,87 @@ function ArchivedTab() {
               </tr>
             </thead>
             <tbody>
-              {events.map(ev => (
-                <tr key={ev.id}>
-                  <td>
-                    <div className="adm-cell-main">{ev.title}</div>
-                    {ev.genre && ev.genre !== 'otro' && (
-                      <div className="adm-cell-sub">{ev.genre}</div>
+              {events.map(ev => {
+                const isExpanded = expandedEvents.includes(ev.id)
+                const passengers = eventPassengers[ev.id] || []
+                const isLoadingP = loadingPassengers[ev.id]
+                return (
+                  <>
+                    <tr key={ev.id}>
+                      <td>
+                        <button className="btn-expand" onClick={() => toggleExpand(ev.id)}>
+                          {isExpanded ? '▼' : '▶'}
+                        </button>
+                      </td>
+                      <td>
+                        <div className="adm-cell-main">{ev.title}</div>
+                        {ev.genre && ev.genre !== 'otro' && <div className="adm-cell-sub">{ev.genre}</div>}
+                      </td>
+                      <td>
+                        <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}</div>
+                        <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}</div>
+                      </td>
+                      <td>
+                        <div className="adm-cell-sub">{ev.archived_at ? new Date(ev.archived_at).toLocaleDateString('es-CL') : '—'}</div>
+                      </td>
+                      <td><strong>{ev.final_passengers || 0}</strong></td>
+                      <td><strong>${Number(ev.final_revenue || 0).toLocaleString('es-CL')}</strong></td>
+                      <td><strong style={{color:'#22c55e'}}>${Number(ev.final_collected || 0).toLocaleString('es-CL')}</strong></td>
+                      <td>
+                        <button className="adm-btn adm-btn--ghost" onClick={() => unarchive(ev.id)} style={{fontSize:'12px'}}>
+                          ↩️ Restaurar
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="expanded-row">
+                        <td colSpan={8} style={{padding:'0',background:'var(--bg-2)'}}>
+                          {isLoadingP ? (
+                            <div style={{padding:'20px',textAlign:'center',color:'var(--text-3)'}}>Cargando pasajeros...</div>
+                          ) : passengers.length === 0 ? (
+                            <div style={{padding:'20px',textAlign:'center',color:'var(--text-3)'}}>Sin pasajeros registrados</div>
+                          ) : (
+                            <div style={{padding:'16px'}}>
+                              <div style={{fontSize:'13px',fontWeight:'600',color:'var(--text)',marginBottom:'10px'}}>
+                                👥 {passengers.length} pasajeros del evento
+                              </div>
+                              <table className="adm-table" style={{background:'var(--bg-card)'}}>
+                                <thead>
+                                  <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                    <th>Teléfono</th>
+                                    <th>Punto recogida</th>
+                                    <th>Tipo viaje</th>
+                                    <th>Pagado</th>
+                                    <th>Método</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {passengers.map((p, i) => (
+                                    <tr key={p.id}>
+                                      <td style={{color:'var(--text-3)'}}>{i + 1}</td>
+                                      <td>
+                                        <div className="adm-cell-main">{p.full_name}</div>
+                                        <div className="adm-cell-sub">{p.email}</div>
+                                      </td>
+                                      <td className="adm-cell-sub">{p.phone || '—'}</td>
+                                      <td className="adm-cell-sub">{p.pickup_point || '—'}</td>
+                                      <td><span className="adm-method">{tripLabel(p.trip_type)}</span></td>
+                                      <td style={{color:'#22c55e'}}>${Number(p.booking_paid || 0).toLocaleString('es-CL')}</td>
+                                      <td><span className="adm-method">{p.booking_method === 'mercadopago' ? '💳 MP' : p.booking_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td>
-                    <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}</div>
-                    <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}</div>
-                  </td>
-                  <td>
-                    <div className="adm-cell-sub">{ev.archived_at ? new Date(ev.archived_at).toLocaleDateString('es-CL') : '—'}</div>
-                  </td>
-                  <td><strong>{ev.final_passengers || 0}</strong></td>
-                  <td><strong style={{color:'var(--text)'}}>${Number(ev.final_revenue || 0).toLocaleString('es-CL')}</strong></td>
-                  <td><strong style={{color:'#22c55e'}}>${Number(ev.final_collected || 0).toLocaleString('es-CL')}</strong></td>
-                  <td>
-                    <button
-                      className="adm-btn adm-btn--ghost"
-                      onClick={() => unarchive(ev.id)}
-                      style={{fontSize:'12px'}}
-                    >
-                      ↩️ Restaurar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                  </>
+                )
+              })}
             </tbody>
           </table>
         </div>
