@@ -627,7 +627,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
     if (!form.title || !form.price || !form.event_date) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
     try {
-      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: parseInt(form.total_capacity), event_date: new Date(form.event_date).toISOString() }
+      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity ? parseInt(form.total_capacity) : 0, event_date: new Date(form.event_date).toISOString() }
       let eventId = editing?.id
       if (editing) { await adminUpdateEvent(editing.id, payload); toast.success('Evento actualizado') }
       else { const res = await adminCreateEvent(payload); eventId = res.data.id; toast.success('Evento creado') }
