@@ -764,7 +764,9 @@ function EventsTab() {
     if (!confirm('¿Desactivar este evento?')) return
     await adminDeleteEvent(id); toast.success('Evento desactivado'); load()
   }
-  const filteredEvents = events.filter(ev => ev.title.toLowerCase().includes(search.toLowerCase()))
+  const filteredEvents = events
+    .filter(ev => ev.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
   return (
     <div className="adm-tab">
       <div className="adm-tab__header"><h2>Eventos</h2><button className="adm-btn adm-btn--primary" onClick={() => setShowNewForm(true)}><Plus size={14} /> Nuevo evento</button></div>
