@@ -10,7 +10,9 @@ import {
   adminGetBookingPassengers, adminResendTickets, adminGetStats,
   adminReassignPassenger,
   adminSuspendEvent, adminReactivateEvent,
-  adminGetRefunds, adminMarkRefunded
+  adminGetRefunds, adminMarkRefunded,
+  adminArchiveEvent, adminUnarchiveEvent,
+  adminAutoArchive, adminGetArchivedEvents
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
@@ -24,7 +26,8 @@ const TABS = [
   { id: 'events',   label: '🎵 Eventos' },
   { id: 'vans',     label: '🚐 Vans' },
   { id: 'stats',    label: '📊 Estadísticas' },
-  { id: 'refunds',  label: '💸 Reembolsos' },
+  { id: 'refunds',   label: '💸 Reembolsos' },
+  { id: 'archived',  label: '📦 Archivados' },
 ]
 
 const GENRES = [
@@ -659,11 +662,15 @@ function EventsTab() {
   const [search, setSearch] = useState('')
   const load = () => {
     getEvents(false).then(r => {
-      setEvents(r.data)
-      r.data.forEach(event => adminGetEventVans(event.id).then(res => setEventVans(prev => ({ ...prev, [event.id]: res.data }))).catch(() => {}))
+      const active = r.data.filter(ev => !ev.is_archived)
+      setEvents(active)
+      active.forEach(event => adminGetEventVans(event.id).then(res => setEventVans(prev => ({ ...prev, [event.id]: res.data }))).catch(() => {}))
     }).catch(() => {})
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    adminAutoArchive().catch(() => {})
+    load()
+  }, [])
   const del = async (id) => {
     if (!confirm('¿Desactivar este evento?')) return
     await adminDeleteEvent(id); toast.success('Evento desactivado'); load()
@@ -708,6 +715,10 @@ function EventsTab() {
                     ⚠️ Suspender
                   </button>
                 )}
+                <button style={{background:'var(--bg-2)',color:'var(--text-3)',border:'1px solid var(--border)',padding:'6px 10px',borderRadius:'6px',fontSize:'12px',cursor:'pointer'}}
+                  onClick={async () => { if (!confirm('¿Archivar este evento?')) return; await adminArchiveEvent(ev.id); toast.success('Evento archivado 📦'); load() }}>
+                  📦 Archivar
+                </button>
                 <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
               </div>
             </div>
@@ -951,6 +962,96 @@ function RefundsTab() {
   )
 }
 
+
+// ── ARCHIVED TAB ──────────────────────────────────────────────────────────────
+function ArchivedTab() {
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    adminGetArchivedEvents()
+      .then(r => setEvents(r.data))
+      .catch(() => toast.error('Error cargando archivados'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const unarchive = async (id) => {
+    try {
+      await adminUnarchiveEvent(id)
+      toast.success('Evento restaurado ✅')
+      setEvents(prev => prev.filter(e => e.id !== id))
+    } catch { toast.error('Error al restaurar') }
+  }
+
+  return (
+    <div className="adm-tab">
+      <div className="adm-tab__header">
+        <h2>Eventos Archivados</h2>
+        <span style={{fontSize:'13px',color:'var(--text-3)'}}>{events.length} eventos</span>
+      </div>
+
+      <div style={{padding:'12px 16px',background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'10px',fontSize:'13px',color:'var(--text-3)',marginBottom:'20px',lineHeight:'1.6'}}>
+        <strong style={{color:'var(--text)'}}>📦 Eventos archivados automáticamente</strong><br/>
+        Los eventos se archivan automáticamente 24 horas después de su fecha. Puedes restaurarlos si es necesario.
+      </div>
+
+      {loading ? <div className="adm-loading">Cargando...</div> : events.length === 0 ? (
+        <div style={{textAlign:'center',color:'var(--text-3)',padding:'48px',background:'var(--bg-card)',borderRadius:'12px'}}>
+          <div style={{fontSize:'40px',marginBottom:'12px'}}>📭</div>
+          <p>No hay eventos archivados</p>
+        </div>
+      ) : (
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Fecha</th>
+                <th>Archivado</th>
+                <th>Pasajeros</th>
+                <th>Recaudado</th>
+                <th>Cobrado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map(ev => (
+                <tr key={ev.id}>
+                  <td>
+                    <div className="adm-cell-main">{ev.title}</div>
+                    {ev.genre && ev.genre !== 'otro' && (
+                      <div className="adm-cell-sub">{ev.genre}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}</div>
+                    <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}</div>
+                  </td>
+                  <td>
+                    <div className="adm-cell-sub">{ev.archived_at ? new Date(ev.archived_at).toLocaleDateString('es-CL') : '—'}</div>
+                  </td>
+                  <td><strong>{ev.final_passengers || 0}</strong></td>
+                  <td><strong style={{color:'var(--text)'}}>${Number(ev.final_revenue || 0).toLocaleString('es-CL')}</strong></td>
+                  <td><strong style={{color:'#22c55e'}}>${Number(ev.final_collected || 0).toLocaleString('es-CL')}</strong></td>
+                  <td>
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      onClick={() => unarchive(ev.id)}
+                      style={{fontSize:'12px'}}
+                    >
+                      ↩️ Restaurar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const { user, logout } = useAuthStore()
@@ -980,6 +1081,7 @@ export default function AdminDashboard() {
         {activeTab === 'vans'     && <VansTab />}
         {activeTab === 'stats'    && <StatsTab />}
         {activeTab === 'refunds'  && <RefundsTab />}
+        {activeTab === 'archived' && <ArchivedTab />}
       </main>
     </div>
   )

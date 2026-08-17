@@ -100,4 +100,16 @@ export const adminGetRefunds = () =>
 export const adminMarkRefunded = (bookingId, notes = '') =>
   api.post(`/bookings/admin/${bookingId}/refund`, { notes })
 
+export const adminArchiveEvent = (eventId) =>
+  api.post(`/events/${eventId}/archive`)
+
+export const adminUnarchiveEvent = (eventId) =>
+  api.post(`/events/${eventId}/unarchive`)
+
+export const adminAutoArchive = () =>
+  api.post('/events/auto-archive')
+
+export const adminGetArchivedEvents = () =>
+  api.get('/events/archived')
+
 export default api
