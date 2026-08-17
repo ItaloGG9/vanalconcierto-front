@@ -127,7 +127,7 @@ export default function EventPanel({ event, onClose }) {
                 key={opt.id}
                 type="button"
                 className={`epanel__trip-btn ${tripType === opt.id ? 'epanel__trip-btn--active' : ''}`}
-                onClick={(e) => { e.preventDefault(); setTripType(opt.id) }}
+                onClick={(e) => { e.preventDefault(); setTripType(opt.id); if (opt.id !== 'round_trip') setPaymentPlan('100%') }}
               >
                 <span className="epanel__trip-icon">{opt.icon}</span>
                 <span className="epanel__trip-label">{opt.label}</span>
@@ -171,15 +171,18 @@ export default function EventPanel({ event, onClose }) {
             <div className="epanel__plan-amount">${total.toLocaleString('es-CL')} CLP</div>
             <div className="epanel__plan-desc">Pagas todo ahora</div>
           </button>
-          <button
-            type="button"
-            className={`epanel__plan-btn ${paymentPlan === '50%' ? 'epanel__plan-btn--active' : ''}`}
-            onClick={(e) => { e.preventDefault(); setPaymentPlan('50%') }}
-          >
-            <div className="epanel__plan-title">✌️ Pago en 2 partes</div>
-            <div className="epanel__plan-amount">${Math.round(total * 0.5).toLocaleString('es-CL')} CLP ahora</div>
-            <div className="epanel__plan-desc">El resto durante el viaje</div>
-          </button>
+          {/* Solo mostrar pago en 2 partes para ida y vuelta */}
+          {tripType === 'round_trip' && (
+            <button
+              type="button"
+              className={`epanel__plan-btn ${paymentPlan === '50%' ? 'epanel__plan-btn--active' : ''}`}
+              onClick={(e) => { e.preventDefault(); setPaymentPlan('50%') }}
+            >
+              <div className="epanel__plan-title">✌️ Pago en 2 partes</div>
+              <div className="epanel__plan-amount">${Math.round(total * 0.5).toLocaleString('es-CL')} CLP ahora</div>
+              <div className="epanel__plan-desc">El resto durante el viaje</div>
+            </button>
+          )}
         </div>
 
         <div className="epanel__section-title">Forma de pago</div>
