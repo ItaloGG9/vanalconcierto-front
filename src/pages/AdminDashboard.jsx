@@ -12,7 +12,8 @@ import {
   adminSuspendEvent, adminReactivateEvent,
   adminGetRefunds, adminMarkRefunded,
   adminArchiveEvent, adminUnarchiveEvent,
-  adminAutoArchive, adminGetArchivedEvents
+  adminAutoArchive, adminGetArchivedEvents,
+  adminCancelBooking
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
@@ -60,6 +61,7 @@ function StatusBadge({ status }) {
     confirmed: { label: 'Confirmado',  color: '#22c55e' },
     rejected:  { label: 'Rechazado',   color: '#ef4444' },
     refunded:  { label: 'Reembolsado', color: '#8b5cf6' },
+    cancelled: { label: 'Cancelado',   color: '#6b7280' },
   }
   const s = map[status] || { label: status, color: '#9090a8' }
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
@@ -212,6 +214,72 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
   )
 }
 
+
+// ── MODAL CANCELAR RESERVA ────────────────────────────────────────────────────
+function CancelBookingModal({ booking, onClose, onCancelled }) {
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const paid = Number(booking.paid_amount ?? booking.total_price)
+
+  const cancel = async () => {
+    setSaving(true)
+    try {
+      await adminCancelBooking(booking.id, reason)
+      toast.success('Reserva cancelada ✅ — email enviado al cliente')
+      onCancelled()
+      onClose()
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al cancelar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card">
+        <div className="modal-header">
+          <h3>❌ Cancelar reserva</h3>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{background:'var(--bg-2)',borderRadius:'10px',padding:'16px',marginBottom:'20px'}}>
+            <div className="adm-cell-main">{booking.customer_name}</div>
+            <div className="adm-cell-sub">{booking.customer_email}</div>
+            <div className="adm-cell-sub" style={{marginTop:'6px'}}>
+              Pagado: <strong style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')} CLP</strong>
+              {paid > 0 && <span style={{color:'#f59e0b',marginLeft:'8px'}}>→ pasará a reembolso pendiente</span>}
+            </div>
+          </div>
+
+          <div className="adm-field">
+            <label>Motivo de cancelación (se incluye en el email al cliente)</label>
+            <textarea
+              rows={3}
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="Ej: El evento fue reprogramado, solicitud del cliente, etc."
+              style={{width:'100%',background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'10px',color:'var(--text)',fontSize:'14px',resize:'vertical'}}
+            />
+          </div>
+
+          {paid > 0 && (
+            <div style={{marginTop:'12px',padding:'12px',background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.3)',borderRadius:'8px',fontSize:'13px',color:'var(--text-3)'}}>
+              💡 Como el cliente pagó <strong style={{color:'var(--text)'}}>${paid.toLocaleString('es-CL')} CLP</strong>, la reserva pasará automáticamente a la tab de Reembolsos.
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="adm-btn adm-btn--ghost" onClick={onClose}>Volver</button>
+          <button className="adm-btn adm-btn--danger" onClick={cancel} disabled={saving}>
+            {saving ? 'Cancelando...' : '❌ Confirmar cancelación'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReject, onResend, onConfirmPending, eventVans }) {
   const pending = Math.max(0, Number(booking.total_price) - Number(booking.paid_amount ?? booking.total_price))
   const paid = Number(booking.paid_amount ?? booking.total_price)
@@ -293,6 +361,7 @@ function BookingsTab() {
   const [eventVans, setEventVans] = useState({})
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [showManual, setShowManual] = useState(false)
+  const [cancellingBooking, setCancellingBooking] = useState(null)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -483,6 +552,9 @@ function BookingsTab() {
                                   <button className="adm-btn adm-btn--danger" onClick={() => confirm(b.id, false)} title="Rechazar"><X size={14} /></button>
                                 </>
                               )}
+                              {b.payment_status !== 'cancelled' && b.payment_status !== 'rejected' && (
+                                <button className="adm-btn adm-btn--danger" onClick={() => setCancellingBooking(b)} title="Cancelar reserva" style={{fontSize:'11px'}}>✕ Cancelar</button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -527,6 +599,13 @@ function BookingsTab() {
 
       {showManual && (
         <ManualPassengerModal events={events} onClose={() => setShowManual(false)} onSaved={load} />
+      )}
+      {cancellingBooking && (
+        <CancelBookingModal
+          booking={cancellingBooking}
+          onClose={() => setCancellingBooking(null)}
+          onCancelled={load}
+        />
       )}
     </div>
   )

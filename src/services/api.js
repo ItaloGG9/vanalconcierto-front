@@ -112,4 +112,7 @@ export const adminAutoArchive = () =>
 export const adminGetArchivedEvents = () =>
   api.get('/events/archived')
 
+export const adminCancelBooking = (bookingId, reason = '') =>
+  api.post(`/bookings/admin/${bookingId}/cancel`, { reason })
+
 export default api
