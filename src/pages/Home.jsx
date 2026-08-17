@@ -4,6 +4,7 @@ import { getEvents } from '../services/api'
 import Hero from '../components/layout/Hero'
 import EventCard from '../components/events/EventCard'
 import EventPanel from '../components/events/EventPanel'
+import SocialSection from '../components/sections/SocialSection'
 import toast from 'react-hot-toast'
 import './Home.css'
 
@@ -89,7 +90,6 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Reset página al cambiar filtros
   useEffect(() => { setPage(1) }, [activeGenre, search])
 
   const filteredEvents = events
@@ -118,7 +118,6 @@ export default function Home() {
             <p className="events-section__sub">Todos los viajes incluyen ida y vuelta. Precio por persona.</p>
           </div>
 
-          {/* Barra de búsqueda */}
           <div className="events-search">
             <span className="events-search__icon">🔍</span>
             <input
@@ -133,7 +132,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Filtros de género */}
           <div className="events-genres">
             {GENRES.map(g => (
               <button
@@ -146,14 +144,12 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Contador */}
           {!loading && filteredEvents.length > 0 && (
             <div className="events-count">
               Mostrando {(page - 1) * EVENTS_PER_PAGE + 1}–{Math.min(page * EVENTS_PER_PAGE, filteredEvents.length)} de {filteredEvents.length} eventos
             </div>
           )}
 
-          {/* Grid de eventos */}
           {loading ? (
             <div className="events-scroll-container">
               {[1,2,3,4,5,6,7,8].map(i => (
@@ -191,7 +187,6 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Paginación */}
               {totalPages > 1 && (
                 <div className="events-pagination">
                   <button
@@ -201,7 +196,6 @@ export default function Home() {
                   >
                     ← Anterior
                   </button>
-
                   <div className="events-page-numbers">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
                       <button
@@ -213,7 +207,6 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
-
                   <button
                     className="events-page-btn"
                     onClick={() => { setPage(p => p + 1); scrollToEvents() }}
@@ -229,6 +222,10 @@ export default function Home() {
       </section>
 
       <HowItWorks />
+
+      {/* ← NUEVA SECCIÓN: Reseñas + Instagram */}
+      <SocialSection />
+
       <ContactSection />
 
       {selected && (
