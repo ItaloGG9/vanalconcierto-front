@@ -1059,14 +1059,27 @@ function ArchivedTab() {
       const allPassengers = []
       for (const b of bookings) {
         const pRes = await adminGetBookingPassengers(b.id)
-        const ps = (pRes.data || []).map(p => ({
-          ...p,
-          booking_customer: b.customer_name,
-          booking_paid: b.paid_amount ?? b.total_price,
-          booking_total: b.total_price,
-          booking_method: b.payment_method,
-        }))
-        allPassengers.push(...ps)
+        const ps = pRes.data || []
+        if (ps.length > 0) {
+          // Tiene pasajeros registrados — usar datos reales
+          ps.forEach(p => allPassengers.push({
+            ...p,
+            booking_paid: b.paid_amount ?? b.total_price,
+            booking_method: b.payment_method,
+          }))
+        } else {
+          // Sin pasajero registrado — usar datos del booking
+          allPassengers.push({
+            id: b.id,
+            full_name: b.customer_name,
+            email: b.customer_email,
+            phone: b.customer_phone,
+            trip_type: 'round_trip',
+            pickup_point: null,
+            booking_paid: b.paid_amount ?? b.total_price,
+            booking_method: b.payment_method,
+          })
+        }
       }
       setEventPassengers(prev => ({...prev, [eventId]: allPassengers}))
     } catch { toast.error('Error cargando pasajeros') }
