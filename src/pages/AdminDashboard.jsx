@@ -624,7 +624,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
-    if (!form.title || !form.price || !form.event_date || !form.total_capacity) { toast.error('Completa los campos obligatorios'); return }
+    if (!form.title || !form.price || !form.event_date) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
     try {
       const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: parseInt(form.total_capacity), event_date: new Date(form.event_date).toISOString() }
@@ -648,7 +648,17 @@ function EventFormModal({ editing, onClose, onSaved }) {
           <div className="adm-form-grid">
             <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
             <div className="adm-field"><label>Fecha y hora *</label><input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
-            <div className="adm-field"><label>Capacidad Total *</label><input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" /></div>
+            <div className="adm-field">
+              <label>Capacidad Total {editing ? '' : '*'}</label>
+              <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
+              {editing && (
+                <div style={{marginTop:'6px',fontSize:'12px',color:'var(--text-3)',display:'flex',gap:'12px',flexWrap:'wrap'}}>
+                  <span>🎟️ Vendidos: <strong style={{color:'var(--text)'}}>{editing.sold_tickets ?? '—'}</strong></span>
+                  <span>✅ Disponibles: <strong style={{color:'#22c55e'}}>{editing.available_capacity ?? '—'}</strong></span>
+                  <span>📦 Total actual: <strong style={{color:'var(--text)'}}>{editing.total_capacity ?? '—'}</strong></span>
+                </div>
+              )}
+            </div>
             <div className="adm-field">
               <label>Precio ida y vuelta CLP *</label>
               <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="19000" />
