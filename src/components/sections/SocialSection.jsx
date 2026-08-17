@@ -3,71 +3,69 @@ import { useInView } from 'react-intersection-observer'
 import './SocialSection.css'
 
 const REVIEWS = [
-  // ── Fila 1 (5 estrellas) ──
   {
-    name: 'Camila Rodríguez',
+    name: 'Bayron Díaz',
+    avatar: 'BD',
+    rating: 5,
+    date: 'hace un mes',
+    text: 'Maravilloso servicio! Full claridad con todo. Y el chófer Carlos un 10, nos dejó y esperó en la misma puerta del concierto. Recomendadísimo ✨',
+    event: 'Google Local Guide'
+  },
+  {
+    name: 'Cecilia Roman Araya',
     avatar: 'CR',
     rating: 5,
-    date: 'hace 2 semanas',
-    text: 'Excelente servicio! La van llegó puntual, el chofer muy amable y el viaje súper cómodo. Ya reservé para el próximo concierto 🎵',
-    event: 'Deep Purple - Movistar Arena'
+    date: 'hace 3 semanas',
+    text: 'He viajado a distintos conciertos con Van al Concierto y siempre destacan. Los chóferes muy amables, se detienen en un baño antes y después, música para dormir de regreso y nos dejan lo más cercano a nuestros destinos. 10/10',
+    event: 'Varios conciertos'
   },
   {
-    name: 'Sebastián Morales',
-    avatar: 'SM',
-    rating: 5,
-    date: 'hace 1 mes',
-    text: 'La mejor opción para ir al concierto sin preocuparse del auto ni el estacionamiento. Precio justo y muy buena onda el equipo.',
-    event: 'Concierto Movistar Arena'
-  },
-  {
-    name: 'Valentina Torres',
-    avatar: 'VT',
-    rating: 5,
-    date: 'hace 1 mes',
-    text: 'Super recomendado! Fuimos con amigas y todo perfecto, desde la recogida hasta la vuelta. El ticket QR es muy práctico ✨',
-    event: 'Evento Viña del Mar'
-  },
-  {
-    name: 'Diego Fuentes',
-    avatar: 'DF',
+    name: 'Belen Rojas',
+    avatar: 'BR',
     rating: 5,
     date: 'hace 2 meses',
-    text: 'Servicio impecable. Puntualidad, comodidad y buen precio. Sin duda la mejor forma de ir a un concierto desde la V Región.',
-    event: 'Concierto Santiago'
+    text: 'Excelente servicio, el chófer Gabriel atento en todo momento, puntual y amable. La Van en excelente estado, bien equipada con TV para ver videos y hasta con cargador para el celular! Recomendados siempre!',
+    event: 'Concierto'
   },
-  // ── Fila 2 (4 estrellas) ──
   {
-    name: 'Isidora Castillo',
-    avatar: 'IC',
-    rating: 4,
+    name: 'Berenice Vallejo',
+    avatar: 'BV',
+    rating: 5,
+    date: 'hace un mes',
+    text: 'Excelente la gestión y la comunicación con ellos, el chófer muy atento y muy seguro para ir al concierto. Lo recomiendo 100%!!',
+    event: 'Concierto'
+  },
+  {
+    name: 'Marjorie Cathalinat',
+    avatar: 'MC',
+    rating: 5,
     date: 'hace 2 meses',
-    text: 'Muy buena experiencia en general. El viaje fue cómodo y el chofer puntual. Le faltó un poco más de música en el camino jaja, pero volvería sin dudarlo.',
-    event: 'Movistar Arena'
+    text: 'Excelente servicio de esta empresa, amabilidad desde el primer momento, la elección de sus conductores y vehículos excelente, puntualidad, conducción segura. Si quieres ir tranquilo a ver a tu artista favorito esta es tu Van.',
+    event: 'Concierto'
   },
   {
-    name: 'Andrés Vega',
-    avatar: 'AV',
-    rating: 4,
-    date: 'hace 3 meses',
-    text: 'Buen servicio, llegamos a tiempo al concierto y la vuelta también fue tranquila. El precio es justo para la comodidad que ofrecen.',
-    event: 'Concierto V Región'
+    name: 'Paula Rojas',
+    avatar: 'PR',
+    rating: 5,
+    date: 'hace 2 meses',
+    text: 'Muy buena experiencia!! La Van es súper cómoda, tuve buen viaje, horarios puntuales y te dejan justo en el recinto. Definitivamente volveré a usar sus servicios en el futuro.',
+    event: 'Concierto'
   },
   {
-    name: 'Josefa Muñoz',
-    avatar: 'JM',
-    rating: 4,
-    date: 'hace 3 meses',
-    text: 'Muy recomendable. El sistema de tickets QR es muy práctico y moderno. La van estaba limpia y el chofer muy amable con todos.',
-    event: 'Festival Viña del Mar'
+    name: 'Tamara Reinoso Leiva',
+    avatar: 'TR',
+    rating: 5,
+    date: 'hace 2 meses',
+    text: 'Me encantó el servicio. Muy contenta con el conductor, la puntualidad y la buena onda. 100% recomendable.',
+    event: 'Concierto'
   },
   {
-    name: 'Tomás Herrera',
-    avatar: 'TH',
-    rating: 4,
-    date: 'hace 4 meses',
-    text: 'Buena opción para ir en grupo al concierto. Nos recogieron en el punto acordado sin problemas. Sin duda lo volvería a usar para el próximo evento.',
-    event: 'Lollapalooza Santiago'
+    name: 'Siberiano 21',
+    avatar: 'S2',
+    rating: 5,
+    date: 'hace 2 meses',
+    text: 'Hace poco fuimos a un concierto en Movistar Stgo. con esta empresa y la experiencia fué buenísima. Vehículo cómodo y limpio. El conductor Humberto fué muy simpático y cordial. 100% recomendable.',
+    event: 'Movistar Arena Santiago'
   },
 ]
 
