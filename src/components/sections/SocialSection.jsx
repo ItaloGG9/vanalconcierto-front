@@ -3,6 +3,7 @@ import { useInView } from 'react-intersection-observer'
 import './SocialSection.css'
 
 const REVIEWS = [
+  // ── Fila 1 (5 estrellas) ──
   {
     name: 'Camila Rodríguez',
     avatar: 'CR',
@@ -35,21 +36,38 @@ const REVIEWS = [
     text: 'Servicio impecable. Puntualidad, comodidad y buen precio. Sin duda la mejor forma de ir a un concierto desde la V Región.',
     event: 'Concierto Santiago'
   },
+  // ── Fila 2 (4 estrellas) ──
   {
     name: 'Isidora Castillo',
     avatar: 'IC',
-    rating: 5,
+    rating: 4,
     date: 'hace 2 meses',
-    text: 'Primera vez que usaba el servicio y quedé encantada. La app es fácil, el pago rápido y el viaje genial. Volvería 100%!',
+    text: 'Muy buena experiencia en general. El viaje fue cómodo y el chofer puntual. Le faltó un poco más de música en el camino jaja, pero volvería sin dudarlo.',
     event: 'Movistar Arena'
   },
   {
     name: 'Andrés Vega',
     avatar: 'AV',
-    rating: 5,
+    rating: 4,
     date: 'hace 3 meses',
-    text: 'Muy buena experiencia. Conocí gente nueva en la van, todos fans del mismo artista. El servicio es confiable y puntual.',
+    text: 'Buen servicio, llegamos a tiempo al concierto y la vuelta también fue tranquila. El precio es justo para la comodidad que ofrecen.',
     event: 'Concierto V Región'
+  },
+  {
+    name: 'Josefa Muñoz',
+    avatar: 'JM',
+    rating: 4,
+    date: 'hace 3 meses',
+    text: 'Muy recomendable. El sistema de tickets QR es muy práctico y moderno. La van estaba limpia y el chofer muy amable con todos.',
+    event: 'Festival Viña del Mar'
+  },
+  {
+    name: 'Tomás Herrera',
+    avatar: 'TH',
+    rating: 4,
+    date: 'hace 4 meses',
+    text: 'Buena opción para ir en grupo al concierto. Nos recogieron en el punto acordado sin problemas. Sin duda lo volvería a usar para el próximo evento.',
+    event: 'Lollapalooza Santiago'
   },
 ]
 
@@ -127,7 +145,7 @@ export default function SocialSection() {
               <h3 className="instagram-block__title">Síguenos en Instagram</h3>
               <p className="instagram-block__sub">Fotos de los viajes, sorteos y novedades de próximos eventos</p>
               <a
-                href="https://www.instagram.com/vanalcontienrto_transporte"
+                href="https://www.instagram.com/vanalconcierto_transporte?igsh=MXJrdW5neTlhaW42YQ=="
                 target="_blank"
                 rel="noreferrer"
                 className="instagram-block__btn"
@@ -135,7 +153,7 @@ export default function SocialSection() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
                 </svg>
-                @vanalcontienrto_transporte
+                @vanalconcierto_transporte
               </a>
             </div>
           </div>
@@ -144,7 +162,7 @@ export default function SocialSection() {
               {['🎸','🚐','🎤','🎵','🎶','🎪'].map((emoji, i) => (
                 <a
                   key={i}
-                  href="https://www.instagram.com/vanalcontienrto_transporte"
+                  href="https://www.instagram.com/vanalconcierto_transporte?igsh=MXJrdW5neTlhaW42YQ=="
                   target="_blank"
                   rel="noreferrer"
                   className="ig-preview-item"
