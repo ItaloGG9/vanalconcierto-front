@@ -8,7 +8,9 @@ import {
   adminGetVans, adminCreateVan, adminDeleteVan,
   adminGetEventVans, adminAssignVan, adminUnassignVan,
   adminGetBookingPassengers, adminResendTickets, adminGetStats,
-  adminReassignPassenger
+  adminReassignPassenger,
+  adminSuspendEvent, adminReactivateEvent,
+  adminGetRefunds, adminMarkRefunded
 } from '../services/api'
 import toast from 'react-hot-toast'
 import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
@@ -22,6 +24,7 @@ const TABS = [
   { id: 'events',   label: '🎵 Eventos' },
   { id: 'vans',     label: '🚐 Vans' },
   { id: 'stats',    label: '📊 Estadísticas' },
+  { id: 'refunds',  label: '💸 Reembolsos' },
 ]
 
 const GENRES = [
@@ -260,7 +263,6 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
         {(booking.payment_status === 'confirmed' || booking.payment_status === 'reserved') && (
           <button className="adm-btn adm-btn--ghost" onClick={() => onResend()} title="Reenviar tickets"><Send size={14} /></button>
         )}
-        {/* Confirmar/rechazar solo para transferencias pendientes, NO para MP que ya procesó */}
         {(booking.payment_status === 'reserved' || booking.payment_status === 'pending') && !isMpReserved && (
           <>
             <button className="adm-btn adm-btn--success" onClick={() => onConfirm()} title="Confirmar"><Check size={14} /></button>
@@ -446,40 +448,24 @@ function BookingsTab() {
                             <div className="adm-cell-sub">{b.customer_email}</div>
                           </td>
                           <td><div className="adm-cell-sub">{getNombreEvento(b.event_id)}</div></td>
-                          <td>
-                            <VanAssignCell bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} />
-                          </td>
+                          <td><VanAssignCell bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} /></td>
                           <td>{b.quantity}</td>
                           <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
                           <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
                           <td>
                             {pending > 0 ? (
                               <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                                {/* Verde = segundo pago confirmado, rojo = pendiente de pago */}
-                                <span style={{
-                                  color: b.paid_amount >= b.total_price ? '#22c55e' : '#ff6b35',
-                                  fontWeight:'600'
-                                }}>
+                                <span style={{color: b.paid_amount >= b.total_price ? '#22c55e' : '#ff6b35', fontWeight:'600'}}>
                                   ${pending.toLocaleString('es-CL')}
                                 </span>
-                                {/* Botón ✓ solo si aún hay monto pendiente real */}
                                 {Number(b.paid_amount ?? 0) < Number(b.total_price) && (
-                                  <button
-                                    className="adm-btn adm-btn--success"
-                                    style={{padding:'3px 7px',fontSize:'11px'}}
-                                    onClick={() => confirmPending(b.id)}
-                                    title="Confirmar segundo pago recibido"
-                                  >✓</button>
+                                  <button className="adm-btn adm-btn--success" style={{padding:'3px 7px',fontSize:'11px'}} onClick={() => confirmPending(b.id)} title="Confirmar segundo pago">✓</button>
                                 )}
                               </div>
                             ) : <span style={{color:'var(--text-3)'}}>—</span>}
                           </td>
                           <td>
-                            <div>
-                              <span className="adm-method">
-                                {b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}
-                              </span>
-                            </div>
+                            <div><span className="adm-method">{b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}</span></div>
                             {b.payment_plan === '50%' && <div style={{fontSize:'10px',color:'#ff6b35',fontFamily:'var(--font-mono)',marginTop:'2px'}}>2 partes</div>}
                           </td>
                           <td><StatusBadge status={b.payment_status} /></td>
@@ -488,7 +474,6 @@ function BookingsTab() {
                               {(b.payment_status === 'confirmed' || (b.payment_status === 'reserved' && isMpReserved)) && (
                                 <button className="adm-btn adm-btn--ghost" onClick={() => resend(b.id)} title="Reenviar tickets"><Send size={14} /></button>
                               )}
-                              {/* Confirmar/rechazar solo para transferencias, NO para MP reservado */}
                               {(b.payment_status === 'reserved' || b.payment_status === 'pending') && !isMpReserved && (
                                 <>
                                   <button className="adm-btn adm-btn--success" onClick={() => confirm(b.id, true)} title="Confirmar"><Check size={14} /></button>
@@ -705,10 +690,24 @@ function EventsTab() {
                 <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
                 {vans.length > 0 && <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>}
               </div>
-              <div className="adm-event-status">{ev.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>}</div>
+              <div className="adm-event-status">
+                {ev.is_suspended
+                  ? <span className="status-badge" style={{'--sc':'#ef4444'}}>Suspendido</span>
+                  : ev.is_active
+                  ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activo</span>
+                  : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactivo</span>}
+              </div>
               <div className="adm-actions">
                 <button className="adm-btn adm-btn--primary" onClick={() => setAssigningEvent(ev)} title="Asignar vans"><UserPlus size={14} /></button>
                 <button className="adm-btn adm-btn--ghost" onClick={() => setEditingEvent(ev)}>Editar</button>
+                {ev.is_suspended ? (
+                  <button className="adm-btn adm-btn--success" onClick={async () => { await adminReactivateEvent(ev.id); toast.success('Evento reactivado ✅'); load() }}>✅ Reactivar</button>
+                ) : (
+                  <button style={{background:'#f59e0b',color:'#000',border:'none',padding:'6px 10px',borderRadius:'6px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}
+                    onClick={async () => { if (!confirm('¿Suspender este evento? Todas las reservas pasarán a reembolso pendiente.')) return; await adminSuspendEvent(ev.id); toast.success('Evento suspendido'); load() }}>
+                    ⚠️ Suspender
+                  </button>
+                )}
                 <button className="adm-btn adm-btn--danger" onClick={() => del(ev.id)}><Trash2 size={14} /></button>
               </div>
             </div>
@@ -817,6 +816,141 @@ function StatsTab() {
   )
 }
 
+function RefundsTab() {
+  const [refunds, setRefunds] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('pending')
+  const [notes, setNotes] = useState({})
+
+  const load = () => {
+    setLoading(true)
+    adminGetRefunds()
+      .then(r => setRefunds(r.data))
+      .catch(() => toast.error('Error cargando reembolsos'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const markRefunded = async (id) => {
+    try {
+      await adminMarkRefunded(id, notes[id] || '')
+      toast.success('Reembolso confirmado ✅')
+      load()
+    } catch { toast.error('Error al confirmar reembolso') }
+  }
+
+  const filtered = refunds.filter(r =>
+    filter === 'all' ? true : r.refund_status === filter
+  )
+
+  return (
+    <div className="adm-tab">
+      <div className="adm-tab__header">
+        <h2>Reembolsos</h2>
+        <span style={{fontSize:'13px',color:'var(--text-3)'}}>
+          {refunds.filter(r => r.refund_status === 'pending').length} pendientes
+        </span>
+      </div>
+
+      <div className="adm-filters-container">
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="adm-select">
+          <option value="pending">⏳ Pendientes</option>
+          <option value="refunded">✅ Reembolsados</option>
+          <option value="all">Todos</option>
+        </select>
+      </div>
+
+      {loading ? <div className="adm-loading">Cargando...</div> : (
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Evento</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>A reembolsar</th>
+                <th>Método</th>
+                <th>Estado</th>
+                <th>Notas</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={9} style={{textAlign:'center',color:'var(--text-3)',padding:32}}>
+                  {filter === 'pending' ? 'No hay reembolsos pendientes 🎉' : 'Sin resultados'}
+                </td></tr>
+              )}
+              {filtered.map(b => {
+                const paid = Number(b.paid_amount ?? b.total_price)
+                const isPending = b.refund_status === 'pending'
+                return (
+                  <tr key={b.id}>
+                    <td>
+                      <div className="adm-cell-main">{b.customer_name}</div>
+                      <div className="adm-cell-sub">{b.customer_phone}</div>
+                      <div className="adm-cell-sub">{b.customer_email}</div>
+                    </td>
+                    <td>
+                      <div className="adm-cell-main">{b.events?.title || '—'}</div>
+                      {b.events?.is_suspended && (
+                        <div className="adm-cell-sub" style={{color:'#ef4444',fontSize:'11px'}}>⚠️ Suspendido</div>
+                      )}
+                    </td>
+                    <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
+                    <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
+                    <td style={{color:'#f59e0b',fontWeight:'600'}}>${paid.toLocaleString('es-CL')}</td>
+                    <td>
+                      <span className="adm-method">
+                        {b.payment_method === 'mercadopago' ? '💳 MP' : b.payment_method === 'manual' ? '🤝 Manual' : '🏦 Transf.'}
+                      </span>
+                    </td>
+                    <td>
+                      <StatusBadge status={isPending ? 'pending' : 'refunded'} />
+                      {b.refunded_at && (
+                        <div className="adm-cell-sub">{new Date(b.refunded_at).toLocaleDateString('es-CL')}</div>
+                      )}
+                    </td>
+                    <td>
+                      {isPending ? (
+                        <input
+                          placeholder="Nota opcional"
+                          value={notes[b.id] || ''}
+                          onChange={e => setNotes(prev => ({...prev, [b.id]: e.target.value}))}
+                          style={{width:'120px',fontSize:'12px',background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'6px',padding:'4px 8px',color:'var(--text)'}}
+                        />
+                      ) : (
+                        <span style={{fontSize:'12px',color:'var(--text-3)'}}>{b.refund_notes || '—'}</span>
+                      )}
+                    </td>
+                    <td>
+                      {isPending && (
+                        <button className="adm-btn adm-btn--success" onClick={() => markRefunded(b.id)}>
+                          ✓ Confirmar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div style={{marginTop:'20px',padding:'16px',background:'var(--bg-2)',borderRadius:'10px',fontSize:'13px',color:'var(--text-3)',lineHeight:'1.7'}}>
+        <strong style={{color:'var(--text)'}}>💡 Flujo de reembolso:</strong><br/>
+        1. Ve a <strong>Eventos</strong> y presiona <strong>⚠️ Suspender</strong> en el evento cancelado.<br/>
+        2. Todas las reservas confirmadas aparecen aquí como pendientes.<br/>
+        3. Devuelve el dinero manualmente por transferencia o MP al cliente.<br/>
+        4. Marca <strong>✓ Confirmar</strong> para registrar que se hizo el reembolso.
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const { user, logout } = useAuthStore()
@@ -845,6 +979,7 @@ export default function AdminDashboard() {
         {activeTab === 'events'   && <EventsTab />}
         {activeTab === 'vans'     && <VansTab />}
         {activeTab === 'stats'    && <StatsTab />}
+        {activeTab === 'refunds'  && <RefundsTab />}
       </main>
     </div>
   )

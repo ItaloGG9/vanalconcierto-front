@@ -86,4 +86,18 @@ export const updateVanDriver = (vanId, driverName, driverPhone) => api.put(`/van
 export const adminResendTickets = (bookingId) => api.post(`/bookings/admin/${bookingId}/resend-tickets`)
 export const adminGetStats = () => api.get('/bookings/admin/stats')
 
+// Agregar estas funciones al archivo src/services/api.js
+
+export const adminSuspendEvent = (eventId) =>
+  api.post(`/events/${eventId}/suspend`)
+
+export const adminReactivateEvent = (eventId) =>
+  api.post(`/events/${eventId}/reactivate`)
+
+export const adminGetRefunds = () =>
+  api.get('/bookings/admin/refunds')
+
+export const adminMarkRefunded = (bookingId, notes = '') =>
+  api.post(`/bookings/admin/${bookingId}/refund`, { notes })
+
 export default api
