@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Bloquear rutas de administración para privacidad y seguridad
+Disallow: /admin
+Disallow: /admin/*
+
+# Enlace al mapa del sitio
+Sitemap: https://www.vanalconciertotransporte.cl/sitemap.xml
