@@ -7,8 +7,29 @@ import Home from './pages/Home'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import ProtectedRoute from './components/ui/ProtectedRoute'
+import MaintenancePage from './pages/MaintenancePage'
+
+// ── Modo mantenimiento ────────────────────────────────────────────────────────
+const MAINTENANCE = import.meta.env.VITE_MAINTENANCE === 'true'
+const PREVIEW_KEY = import.meta.env.VITE_PREVIEW_KEY || 'vanalconcierto2024'
+
+function isPreviewMode() {
+  if (typeof window === 'undefined') return false
+  const params = new URLSearchParams(window.location.search)
+  // También guardar en sessionStorage para no perderlo al navegar
+  if (params.get('preview') === PREVIEW_KEY) {
+    sessionStorage.setItem('vac_preview', PREVIEW_KEY)
+    return true
+  }
+  return sessionStorage.getItem('vac_preview') === PREVIEW_KEY
+}
 
 export default function App() {
+  // Mostrar mantenimiento si está activo y no es preview
+  if (MAINTENANCE && !isPreviewMode()) {
+    return <MaintenancePage />
+  }
+
   return (
     <HelmetProvider>
       <BrowserRouter>
@@ -26,7 +47,6 @@ export default function App() {
           }}
         />
         <Routes>
-          {/* Sitio público */}
           <Route path="/" element={
             <>
               <Navbar />
@@ -34,16 +54,12 @@ export default function App() {
               <Footer />
             </>
           } />
-
-          {/* Admin */}
           <Route path="/fran/login" element={<AdminLogin />} />
           <Route path="/fran" element={
             <ProtectedRoute role="admin">
               <AdminDashboard />
             </ProtectedRoute>
           } />
-
-          {/* Resultado de pago MP */}
           <Route path="/booking/success" element={<BookingResult type="success" />} />
           <Route path="/booking/failure" element={<BookingResult type="failure" />} />
           <Route path="/booking/pending" element={<BookingResult type="pending" />} />
