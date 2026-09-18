@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { HelmetProvider } from 'react-helmet-async'
@@ -17,7 +16,6 @@ const PREVIEW_KEY = import.meta.env.VITE_PREVIEW_KEY || 'vanalconcierto2024'
 function isPreviewMode() {
   if (typeof window === 'undefined') return false
   const params = new URLSearchParams(window.location.search)
-  // También guardar en sessionStorage para no perderlo al navegar
   if (params.get('preview') === PREVIEW_KEY) {
     sessionStorage.setItem('vac_preview', PREVIEW_KEY)
     return true
@@ -25,9 +23,14 @@ function isPreviewMode() {
   return sessionStorage.getItem('vac_preview') === PREVIEW_KEY
 }
 
+function isAdminRoute() {
+  if (typeof window === 'undefined') return false
+  return window.location.pathname.startsWith('/fran')
+}
+
 export default function App() {
-  // Mostrar mantenimiento si está activo y no es preview
-  if (MAINTENANCE && !isPreviewMode()) {
+  // Mostrar mantenimiento si está activo y no es preview ni ruta admin
+  if (MAINTENANCE && !isPreviewMode() && !isAdminRoute()) {
     return <MaintenancePage />
   }
 
