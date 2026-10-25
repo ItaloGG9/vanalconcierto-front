@@ -381,16 +381,16 @@ function BookingsTab() {
 
   const confirm = async (id, approved) => {
     try {
-      await adminConfirmTransfer({ booking_id: id, approved })
-      toast.success(approved ? 'Confirmado ✅' : 'Rechazado')
+      const res = await adminConfirmTransfer({ booking_id: id, approved })
+      toast.success(res.data?.message || (approved ? 'Confirmado ✅' : 'Rechazado'), { duration: 6000 })
       load()
     } catch { toast.error('Error al procesar') }
   }
 
   const confirmPending = async (id) => {
     try {
-      await adminConfirmTransfer({ booking_id: id, approved: true })
-      toast.success('Segundo pago confirmado ✅')
+      const res = await adminConfirmTransfer({ booking_id: id, approved: true })
+      toast.success(res.data?.message || 'Segundo pago confirmado ✅', { duration: 6000 })
       load()
     } catch { toast.error('Error al confirmar') }
   }
