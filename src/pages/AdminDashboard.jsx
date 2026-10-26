@@ -4,7 +4,7 @@ import {
   adminGetBookings, adminConfirmTransfer,
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents,
+  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents, adminGetEvents,
   adminGetVans, adminCreateVan, adminDeleteVan,
   adminGetEventVans, adminAssignVan, adminUnassignVan,
   adminGetBookingPassengers, adminResendTickets, adminGetStats,
@@ -30,6 +30,15 @@ const TABS = [
   { id: 'refunds',   label: '💸 Reembolsos' },
   { id: 'archived',  label: '📦 Archivados' },
 ]
+
+// ISO (UTC) → "YYYY-MM-DDTHH:mm" en hora local, que es lo que espera <input type="datetime-local">
+const toLocalInputValue = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d)) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 const GENRES = [
   { id: 'otro',        label: '🎼 Otro' },
@@ -608,20 +617,22 @@ function BookingsTab() {
 function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '', description: editing?.description || '',
-    pickup_info: editing?.pickup_info || '', event_date: editing?.event_date?.slice(0,16) || '',
-    price: editing?.price || '', price_one_way: editing?.price_one_way || '',
-    original_price: editing?.original_price || '',
-    total_capacity: editing?.total_capacity || '', is_round_trip: editing?.is_round_trip ?? true,
+    pickup_info: editing?.pickup_info || '', event_date: toLocalInputValue(editing?.event_date),
+    price: editing?.price ?? '', price_one_way: editing?.price_one_way ?? '',
+    original_price: editing?.original_price ?? '',
+    total_capacity: editing?.total_capacity ?? '', is_round_trip: editing?.is_round_trip ?? true,
     is_active: editing?.is_active ?? true, genre: editing?.genre || 'otro',
   })
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
+  const soldNow = Number(editing?.sold_tickets ?? 0)
+  const availableNow = editing?.available_capacity ?? ((editing?.total_capacity ?? 0) - soldNow)
 
   const save = async () => {
     if (!form.title || !form.price || !form.event_date) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
     try {
-      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity ? parseInt(form.total_capacity) : 0, event_date: new Date(form.event_date).toISOString() }
+      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity !== '' ? parseInt(form.total_capacity) : 0, event_date: new Date(form.event_date).toISOString() }
       let eventId = editing?.id
       if (editing) { await adminUpdateEvent(editing.id, payload); toast.success('Evento actualizado') }
       else { const res = await adminCreateEvent(payload); eventId = res.data.id; toast.success('Evento creado') }
@@ -647,9 +658,9 @@ function EventFormModal({ editing, onClose, onSaved }) {
               <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
               {editing && (
                 <div style={{marginTop:'6px',fontSize:'12px',color:'var(--text-3)',display:'flex',gap:'12px',flexWrap:'wrap'}}>
-                  <span>🎟️ Vendidos: <strong style={{color:'var(--text)'}}>{editing.sold_tickets ?? '—'}</strong></span>
-                  <span>✅ Disponibles: <strong style={{color:'#22c55e'}}>{editing.available_capacity ?? '—'}</strong></span>
-                  <span>📦 Total actual: <strong style={{color:'var(--text)'}}>{editing.total_capacity ?? '—'}</strong></span>
+                  <span>🎟️ Vendidos: <strong style={{color:'var(--text)'}}>{soldNow}</strong></span>
+                  <span>✅ Disponibles: <strong style={{color: availableNow < 0 ? '#ef4444' : '#22c55e'}}>{availableNow}</strong></span>
+                  <span>📦 Total actual: <strong style={{color:'var(--text)'}}>{editing.total_capacity ?? 0}</strong></span>
                 </div>
               )}
             </div>
@@ -744,7 +755,7 @@ function EventsTab() {
   const [eventVans, setEventVans] = useState({})
   const [search, setSearch] = useState('')
   const load = () => {
-    getEvents(false).then(r => {
+    adminGetEvents().then(r => {
       const active = r.data.filter(ev => !ev.is_archived)
       setEvents(active)
       active.forEach(event => adminGetEventVans(event.id).then(res => setEventVans(prev => ({ ...prev, [event.id]: res.data }))).catch(() => {}))

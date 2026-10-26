@@ -41,6 +41,7 @@ export const login = (email, password) => api.post('/auth/login', { email, passw
 // ── Admin ─────────────────────────────────────────────────────
 export const adminGetBookings = (params) => api.get('/bookings/admin/all', { params })
 export const adminConfirmTransfer = (data) => api.post('/bookings/transfer/confirm', data)
+export const adminGetEvents = () => api.get('/events/admin/list')
 export const adminCreateEvent = (data) => api.post('/events/', data)
 export const adminUpdateEvent = (id, data) => api.put(`/events/${id}`, data)
 export const adminDeleteEvent = (id) => api.delete(`/events/${id}`)
