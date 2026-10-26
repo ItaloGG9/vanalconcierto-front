@@ -114,7 +114,7 @@ export default function EventPanel({ event, onClose }) {
         <div className="epanel__meta">
           <div className="epanel__meta-item">
             <Calendar size={15} />
-            {format(new Date(event.event_date), "EEEE d 'de' MMMM, yyyy — HH:mm", { locale: es })}
+            {format(new Date(event.event_date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
           </div>
         </div>
 

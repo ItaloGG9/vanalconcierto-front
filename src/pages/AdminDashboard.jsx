@@ -31,13 +31,13 @@ const TABS = [
   { id: 'archived',  label: '📦 Archivados' },
 ]
 
-// ISO (UTC) → "YYYY-MM-DDTHH:mm" en hora local, que es lo que espera <input type="datetime-local">
+// ISO (UTC) → "YYYY-MM-DD" en hora local, que es lo que espera <input type="date">
 const toLocalInputValue = (iso) => {
   if (!iso) return ''
   const d = new Date(iso)
   if (isNaN(d)) return ''
   const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 const GENRES = [
@@ -632,7 +632,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
     if (!form.title || !form.price || !form.event_date) { toast.error('Completa los campos obligatorios'); return }
     setSaving(true)
     try {
-      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity !== '' ? parseInt(form.total_capacity) : 0, event_date: new Date(form.event_date).toISOString() }
+      const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity !== '' ? parseInt(form.total_capacity) : 0, event_date: new Date(`${form.event_date}T23:59`).toISOString() }
       let eventId = editing?.id
       if (editing) { await adminUpdateEvent(editing.id, payload); toast.success('Evento actualizado') }
       else { const res = await adminCreateEvent(payload); eventId = res.data.id; toast.success('Evento creado') }
@@ -652,7 +652,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
         <div className="modal-body">
           <div className="adm-form-grid">
             <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
-            <div className="adm-field"><label>Fecha y hora *</label><input type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
+            <div className="adm-field"><label>Fecha *</label><input type="date" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
             <div className="adm-field">
               <label>Capacidad Total {editing ? '' : '*'}</label>
               <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
@@ -1154,7 +1154,6 @@ function ArchivedTab() {
                       </td>
                       <td>
                         <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}</div>
-                        <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}</div>
                       </td>
                       <td>
                         <div className="adm-cell-sub">{ev.archived_at ? new Date(ev.archived_at).toLocaleDateString('es-CL') : '—'}</div>
