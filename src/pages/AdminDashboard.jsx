@@ -617,7 +617,7 @@ function BookingsTab() {
 function EventFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '', description: editing?.description || '',
-    pickup_info: editing?.pickup_info || '', event_date: toLocalInputValue(editing?.event_date),
+    pickup_info: editing?.pickup_info || '', event_date: toLocalInputValue(editing?.event_date), event_time: editing?.event_time || '',
     price: editing?.price ?? '', price_one_way: editing?.price_one_way ?? '',
     original_price: editing?.original_price ?? '',
     total_capacity: editing?.total_capacity ?? '', is_round_trip: editing?.is_round_trip ?? true,
@@ -653,6 +653,7 @@ function EventFormModal({ editing, onClose, onSaved }) {
           <div className="adm-form-grid">
             <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
             <div className="adm-field"><label>Fecha *</label><input type="date" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
+            <div className="adm-field"><label>Hora del evento</label><input type="time" value={form.event_time} onChange={e => setForm({...form, event_time: e.target.value})} /></div>
             <div className="adm-field">
               <label>Capacidad Total {editing ? '' : '*'}</label>
               <input type="number" value={form.total_capacity} onChange={e => setForm({...form, total_capacity: e.target.value})} placeholder="34" />
@@ -790,7 +791,7 @@ function EventsTab() {
               <div className="adm-event-img">{ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}</div>
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
-                <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
+                <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}{ev.event_time && ` ${ev.event_time}`} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
                 {vans.length > 0 && <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>}
               </div>
               <div className="adm-event-status">
