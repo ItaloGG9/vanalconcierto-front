@@ -4,7 +4,7 @@ import {
   adminGetBookings, adminConfirmTransfer,
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents, adminGetEvents,
+  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents, adminGetEvents, adminGetVanAssignments,
   adminGetVans, adminCreateVan, adminDeleteVan,
   adminGetEventVans, adminAssignVan, adminUnassignVan,
   adminGetBookingPassengers, adminResendTickets, adminGetStats,
@@ -130,7 +130,7 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
   const [form, setForm] = useState({
     event_id: '', customer_name: '', customer_email: '', customer_phone: '',
     full_name: '', pickup_point: '', return_point: '', trip_type: 'round_trip',
-    total_price: '', paid_amount: '',
+    total_price: '', paid_amount: '', quantity: 1,
   })
   const [saving, setSaving] = useState(false)
 
@@ -138,6 +138,8 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
     if (!form.event_id || !form.customer_name || !form.customer_phone) {
       toast.error('Completa los campos obligatorios'); return
     }
+    const quantity = parseInt(form.quantity)
+    if (!quantity || quantity < 1 || quantity > 50) { toast.error('La cantidad de cupos debe estar entre 1 y 50'); return }
     setSaving(true)
     try {
       const token = localStorage.getItem('vac_token')
@@ -147,9 +149,9 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
         body: JSON.stringify({
           event_id: form.event_id,
           customer_name: form.customer_name,
-          customer_email: form.customer_email || `manual_${Date.now()}@vanalconcierto.cl`,
+          customer_email: form.customer_email.trim(),
           customer_phone: form.customer_phone,
-          quantity: 1,
+          quantity,
           total_price: parseFloat(form.total_price) || 0,
           paid_amount: parseFloat(form.paid_amount) || 0,
           payment_method: 'manual',
@@ -162,10 +164,11 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
           }
         })
       })
-      if (!res.ok) throw new Error()
-      toast.success('Pasajero agregado ✅')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.detail || 'Error al guardar')
+      toast.success(data.message || 'Reserva manual creada ✅', { duration: 6000 })
       onSaved(); onClose()
-    } catch { toast.error('Error al guardar') }
+    } catch (e) { toast.error(e.message || 'Error al guardar') }
     finally { setSaving(false) }
   }
 
@@ -173,7 +176,7 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-card modal-card--wide">
         <div className="modal-header">
-          <h3>➕ Ingreso manual de pasajero</h3>
+          <h3>➕ Reserva manual</h3>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body">
@@ -187,7 +190,12 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
             </div>
             <div className="adm-field"><label>Nombre cliente *</label><input value={form.customer_name} onChange={e => setForm({...form, customer_name: e.target.value})} placeholder="Juan Pérez" /></div>
             <div className="adm-field"><label>Teléfono *</label><input value={form.customer_phone} onChange={e => setForm({...form, customer_phone: e.target.value})} placeholder="+56912345678" /></div>
-            <div className="adm-field"><label>Email</label><input value={form.customer_email} onChange={e => setForm({...form, customer_email: e.target.value})} placeholder="correo@email.com" /></div>
+            <div className="adm-field"><label>Email (para enviar el QR)</label><input type="email" value={form.customer_email} onChange={e => setForm({...form, customer_email: e.target.value})} placeholder="correo@email.com" /></div>
+            <div className="adm-field">
+              <label>Cantidad de cupos *</label>
+              <input type="number" min="1" max="50" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} />
+              <span style={{fontSize:'11px',color:'var(--text-3)',marginTop:'2px'}}>Los acompañantes quedan con los datos del cliente</span>
+            </div>
             <div className="adm-field">
               <label>Tipo de viaje</label>
               <select value={form.trip_type} onChange={e => setForm({...form, trip_type: e.target.value})}>
@@ -210,13 +218,13 @@ function ManualPassengerModal({ events, onClose, onSaved }) {
                 {PICKUP_POINTS_LIST.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-            <div className="adm-field"><label>Total CLP</label><input type="number" value={form.total_price} onChange={e => setForm({...form, total_price: e.target.value})} placeholder="15000" /></div>
+            <div className="adm-field"><label>Total CLP (todos los cupos)</label><input type="number" value={form.total_price} onChange={e => setForm({...form, total_price: e.target.value})} placeholder="15000" /></div>
             <div className="adm-field"><label>Ya pagado CLP</label><input type="number" value={form.paid_amount} onChange={e => setForm({...form, paid_amount: e.target.value})} placeholder="0" /></div>
           </div>
         </div>
         <div className="modal-footer">
           <button className="adm-btn adm-btn--ghost" onClick={onClose}>Cancelar</button>
-          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Agregar pasajero'}</button>
+          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Crear reserva'}</button>
         </div>
       </div>
     </div>
@@ -792,6 +800,7 @@ function EventsTab() {
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
                 <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}{ev.event_time && ` ${ev.event_time}`} · ${Number(ev.price).toLocaleString('es-CL')} CLP · {available} cupos{ev.genre && ev.genre !== 'otro' && ` · ${GENRES.find(g => g.id === ev.genre)?.label || ''}`}</div>
+                <div className="adm-event-bookings">🎟️ <strong>{ev.bookings_count ?? 0}</strong> reserva{ev.bookings_count === 1 ? '' : 's'} · {ev.sold_tickets ?? 0}/{ev.total_capacity ?? 0} cupos vendidos</div>
                 {vans.length > 0 && <div className="adm-event-drivers"><Users size={12} />{vans.map(v => v.name).join(', ')}</div>}
               </div>
               <div className="adm-event-status">
@@ -834,6 +843,7 @@ function VansTab() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name:'', license_plate:'', capacity:17, owner_email:'', password:'', current_driver_name:'', current_driver_phone:'' })
   const [saving, setSaving] = useState(false)
+  const [openVan, setOpenVan] = useState(null)
   const load = () => adminGetVans().then(r => setVans(r.data)).catch(() => {})
   useEffect(() => { load() }, [])
   const save = async () => {
@@ -871,14 +881,59 @@ function VansTab() {
       )}
       <div className="adm-drivers-list">
         {vans.map(v => (
-          <div key={v.id} className="adm-driver-row">
+          <div key={v.id}>
+          <div className="adm-driver-row">
             <div className="adm-driver-avatar"><span>🚐</span></div>
             <div className="adm-driver-info"><div className="adm-cell-main">{v.name}</div><div className="adm-cell-sub">{v.license_plate && `📋 ${v.license_plate} · `}{v.capacity} pasajeros{v.current_driver_name && ` · 🧑‍✈️ ${v.current_driver_name}`}</div></div>
             <div>{v.is_active ? <span className="status-badge" style={{'--sc':'#22c55e'}}>Activa</span> : <span className="status-badge" style={{'--sc':'#9090a8'}}>Inactiva</span>}</div>
-            <div className="adm-actions"><button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}><Trash2 size={14} /></button></div>
+            <div className="adm-actions">
+              <button className="adm-btn adm-btn--ghost" onClick={() => setOpenVan(openVan === v.id ? null : v.id)}>{openVan === v.id ? '▼' : '▶'} Eventos y pasajeros</button>
+              <button className="adm-btn adm-btn--danger" onClick={() => remove(v.id)}><Trash2 size={14} /></button>
+            </div>
+          </div>
+          {openVan === v.id && <VanAssignments vanId={v.id} />}
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+const TRIP_LABEL = { round_trip: 'Ida y vuelta', outbound_only: 'Solo ida', return_only: 'Solo vuelta' }
+
+function VanAssignments({ vanId }) {
+  const [events, setEvents] = useState(null)
+  useEffect(() => {
+    adminGetVanAssignments(vanId).then(r => setEvents(r.data)).catch(() => { setEvents([]); toast.error('Error cargando eventos de la van') })
+  }, [vanId])
+  if (!events) return <div className="adm-van-assignments">Cargando...</div>
+  if (!events.length) return <div className="adm-van-assignments">Esta van no tiene eventos asignados.</div>
+  return (
+    <div className="adm-van-assignments">
+      {events.map(ev => (
+        <div key={ev.id} className="adm-van-assignments__event">
+          <div className="adm-cell-main">{ev.title}</div>
+          <div className="adm-cell-sub">{new Date(ev.event_date).toLocaleDateString('es-CL')}{ev.event_time && ` ${ev.event_time}`} · {ev.passengers.length} pasajero{ev.passengers.length === 1 ? '' : 's'}</div>
+          {ev.passengers.length === 0
+            ? <div className="adm-cell-sub">Sin pasajeros asignados</div>
+            : (
+              <table className="adm-van-assignments__table">
+                <thead><tr><th>Pasajero</th><th>Teléfono</th><th>Viaje</th><th>Recogida</th><th>Retorno</th></tr></thead>
+                <tbody>
+                  {ev.passengers.map(p => (
+                    <tr key={p.id}>
+                      <td>{p.full_name}</td>
+                      <td>{p.phone || '—'}</td>
+                      <td>{TRIP_LABEL[p.trip_type] || p.trip_type}</td>
+                      <td>{p.pickup_point || '—'}</td>
+                      <td>{p.return_point || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+        </div>
+      ))}
     </div>
   )
 }

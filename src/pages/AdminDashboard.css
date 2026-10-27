@@ -1212,3 +1212,49 @@
 }
 .van-cell__select:hover { border-color: var(--accent); }
 .van-cell__select:focus { outline: none; border-color: var(--accent); }
+/* ── Reservas en la lista de eventos ───────────────────── */
+.adm-event-bookings {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: rgba(255, 184, 0, 0.12);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #FFB800;
+}
+.adm-event-bookings strong { font-size: 14px; }
+
+/* ── Vans: eventos y pasajeros asignados ───────────────── */
+.adm-van-assignments {
+  margin: -4px 0 8px;
+  padding: 12px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 13px;
+  color: var(--text-3);
+}
+.adm-van-assignments__event + .adm-van-assignments__event {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.adm-van-assignments__table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.adm-van-assignments__table th,
+.adm-van-assignments__table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.adm-van-assignments__table th { color: var(--text-3); font-weight: 600; }
+@media (max-width: 768px) {
+  .adm-van-assignments { overflow-x: auto; }
+  .adm-van-assignments__table { min-width: 520px; }
+}

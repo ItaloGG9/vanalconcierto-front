@@ -62,6 +62,7 @@ export const adminGetEventDrivers = (eventId) => api.get(`/events/${eventId}/dri
 
 // ── Vans ─────────────────────────────────────────────────────
 export const adminGetVans = () => api.get('/vans/')
+export const adminGetVanAssignments = (vanId) => api.get(`/vans/${vanId}/assignments`)
 export const adminCreateVan = (data) => api.post('/vans/', data)
 export const adminUpdateVan = (id, data) => api.put(`/vans/${id}`, data)
 export const adminDeleteVan = (id) => api.delete(`/vans/${id}`)
