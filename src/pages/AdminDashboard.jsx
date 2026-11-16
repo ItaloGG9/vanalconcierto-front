@@ -636,11 +636,14 @@ function EventFormModal({ editing, initialDate, onClose, onSaved }) {
   })
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
+  const today = toLocalInputValue(new Date().toISOString())
   const soldNow = Number(editing?.sold_tickets ?? 0)
   const availableNow = editing?.available_capacity ?? ((editing?.total_capacity ?? 0) - soldNow)
 
   const save = async () => {
     if (!form.title || !form.price || !form.event_date) { toast.error('Completa los campos obligatorios'); return }
+    // Los eventos nuevos no pueden quedar en una fecha pasada (editar uno pasado sí se permite)
+    if (!editing && form.event_date < today) { toast.error('No se pueden crear eventos en una fecha pasada'); return }
     setSaving(true)
     try {
       const payload = { ...form, price: parseFloat(form.price), price_one_way: form.price_one_way ? parseFloat(form.price_one_way) : null, original_price: form.original_price ? parseFloat(form.original_price) : null, total_capacity: form.total_capacity !== '' ? parseInt(form.total_capacity) : 0, event_date: new Date(`${form.event_date}T23:59`).toISOString() }
@@ -663,7 +666,7 @@ function EventFormModal({ editing, initialDate, onClose, onSaved }) {
         <div className="modal-body">
           <div className="adm-form-grid">
             <div className="adm-field adm-field--full"><label>Título *</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Nombre del concierto" /></div>
-            <div className="adm-field"><label>Fecha *</label><input type="date" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
+            <div className="adm-field"><label>Fecha *</label><input type="date" min={editing ? undefined : today} value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} /></div>
             <div className="adm-field"><label>Hora del evento</label><input type="time" value={form.event_time} onChange={e => setForm({...form, event_time: e.target.value})} /></div>
             <div className="adm-field">
               <label>Capacidad Total {editing ? '' : '*'}</label>
