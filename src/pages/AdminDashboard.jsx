@@ -16,7 +16,9 @@ import {
   adminCancelBooking
 } from '../services/api'
 import toast from 'react-hot-toast'
-import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket } from 'lucide-react'
+import { LogOut, Plus, Check, X, Trash2, Users, UserPlus, Menu, Send, BarChart2, TrendingUp, Ticket, ChevronLeft, ChevronRight, Pencil, Eye } from 'lucide-react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import BookingPassengersManager from '../components/BookingPassengersManager'
 import PickupTimeSelector from '../components/PickupTimeSelector'
 import '../components/PickupTimeSelector.css'
@@ -25,6 +27,7 @@ import './AdminDashboard.css'
 const TABS = [
   { id: 'bookings', label: '📦 Reservas' },
   { id: 'events',   label: '🎵 Eventos' },
+  { id: 'calendar', label: '📅 Calendario' },
   { id: 'vans',     label: '🚐 Vans' },
   { id: 'stats',    label: '📊 Estadísticas' },
   { id: 'refunds',   label: '💸 Reembolsos' },
@@ -622,10 +625,10 @@ function BookingsTab() {
   )
 }
 
-function EventFormModal({ editing, onClose, onSaved }) {
+function EventFormModal({ editing, initialDate, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: editing?.title || '', description: editing?.description || '',
-    pickup_info: editing?.pickup_info || '', event_date: toLocalInputValue(editing?.event_date), event_time: editing?.event_time || '',
+    pickup_info: editing?.pickup_info || '', event_date: editing ? toLocalInputValue(editing.event_date) : (initialDate || ''), event_time: editing?.event_time || '',
     price: editing?.price ?? '', price_one_way: editing?.price_one_way ?? '',
     original_price: editing?.original_price ?? '',
     total_capacity: editing?.total_capacity ?? '', is_round_trip: editing?.is_round_trip ?? true,
@@ -756,7 +759,7 @@ function AssignVanModal({ event, onClose, onAssigned }) {
   )
 }
 
-function EventsTab() {
+function EventsTab({ focusEventId, onFocusDone }) {
   const [events, setEvents] = useState([])
   const [editingEvent, setEditingEvent] = useState(null)
   const [showNewForm, setShowNewForm] = useState(false)
@@ -774,6 +777,16 @@ function EventsTab() {
     adminAutoArchive().catch(() => {})
     load()
   }, [])
+  // Al llegar desde el calendario: mostrar el evento resaltado
+  useEffect(() => {
+    if (!focusEventId || !events.some(ev => ev.id === focusEventId)) return
+    setSearch('')
+    const t = setTimeout(() => {
+      document.getElementById(`event-row-${focusEventId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    const clear = setTimeout(() => onFocusDone?.(), 6000)
+    return () => { clearTimeout(t); clearTimeout(clear) }
+  }, [focusEventId, events])
   const del = async (id) => {
     if (!confirm('¿Desactivar este evento?')) return
     await adminDeleteEvent(id); toast.success('Evento desactivado'); load()
@@ -795,7 +808,7 @@ function EventsTab() {
           const vans = eventVans[ev.id] || []
           const available = ev.available_capacity ?? 0
           return (
-            <div key={ev.id} className="adm-event-row">
+            <div key={ev.id} id={`event-row-${ev.id}`} className={`adm-event-row ${focusEventId === ev.id ? 'adm-event-row--focus' : ''}`}>
               <div className="adm-event-img">{ev.image_url ? <img src={ev.image_url} alt={ev.title} /> : <span>🎵</span>}</div>
               <div className="adm-event-info">
                 <div className="adm-cell-main">{ev.title}</div>
@@ -834,6 +847,110 @@ function EventsTab() {
       {showNewForm && <EventFormModal editing={null} onClose={() => setShowNewForm(false)} onSaved={load} />}
       {editingEvent && <EventFormModal editing={editingEvent} onClose={() => setEditingEvent(null)} onSaved={load} />}
       {assigningEvent && <AssignVanModal event={assigningEvent} onClose={() => setAssigningEvent(null)} onAssigned={load} />}
+    </div>
+  )
+}
+
+const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+// Fecha local "YYYY-MM-DD" (misma clave que usa el formulario de eventos)
+const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// 6 semanas de lunes a domingo que cubren el mes
+function monthGrid(month) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1)
+  const start = new Date(first)
+  start.setDate(first.getDate() - ((first.getDay() + 6) % 7))
+  return Array.from({ length: 42 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i))
+}
+
+function CalendarTab({ onViewEvent }) {
+  const [events, setEvents] = useState([])
+  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
+  const [selected, setSelected] = useState(null)   // evento con el menú Editar / Ver abierto
+  const [editingEvent, setEditingEvent] = useState(null)
+  const [newDate, setNewDate] = useState(null)      // "YYYY-MM-DD" para crear evento ese día
+  const load = () => adminGetEvents().then(r => setEvents(r.data.filter(ev => !ev.is_archived))).catch(() => toast.error('Error cargando eventos'))
+  useEffect(() => { load() }, [])
+
+  const byDay = {}
+  for (const ev of events) {
+    const key = toLocalInputValue(ev.event_date)
+    ;(byDay[key] = byDay[key] || []).push(ev)
+  }
+  Object.values(byDay).forEach(list => list.sort((a, b) => (a.event_time || '99').localeCompare(b.event_time || '99')))
+  const todayKey = dayKey(new Date())
+  const shift = (n) => setMonth(m => new Date(m.getFullYear(), m.getMonth() + n, 1))
+
+  return (
+    <div className="adm-tab">
+      <div className="adm-tab__header">
+        <h2>Calendario</h2>
+        <button className="adm-btn adm-btn--primary" onClick={() => setNewDate(todayKey)}><Plus size={14} /> Nuevo evento</button>
+      </div>
+      <div className="adm-cal__nav">
+        <button className="adm-btn adm-btn--ghost" onClick={() => shift(-1)} aria-label="Mes anterior"><ChevronLeft size={16} /></button>
+        <h3 className="adm-cal__month">{format(month, "MMMM yyyy", { locale: es })}</h3>
+        <button className="adm-btn adm-btn--ghost" onClick={() => shift(1)} aria-label="Mes siguiente"><ChevronRight size={16} /></button>
+        <button className="adm-btn adm-btn--ghost" onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)) }}>Hoy</button>
+      </div>
+      <p className="adm-cal__hint">Toca un día para crear un evento · toca un evento para editarlo o verlo en Eventos</p>
+      <div className="adm-cal">
+        {WEEKDAYS.map(d => <div key={d} className="adm-cal__weekday">{d}</div>)}
+        {monthGrid(month).map(day => {
+          const key = dayKey(day)
+          const dayEvents = byDay[key] || []
+          const outside = day.getMonth() !== month.getMonth()
+          const past = key < todayKey
+          return (
+            <div
+              key={key}
+              className={`adm-cal__day ${outside ? 'adm-cal__day--outside' : ''} ${key === todayKey ? 'adm-cal__day--today' : ''} ${past ? 'adm-cal__day--past' : ''}`}
+              onClick={() => !past && setNewDate(key)}
+              title={past ? '' : 'Crear evento este día'}
+            >
+              <div className="adm-cal__daynum">{day.getDate()}</div>
+              {dayEvents.map(ev => (
+                <button
+                  key={ev.id}
+                  className={`adm-cal__event ${ev.is_suspended ? 'adm-cal__event--suspended' : !ev.is_active ? 'adm-cal__event--inactive' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setSelected(ev) }}
+                  title={ev.title}
+                >
+                  {ev.event_time && <span className="adm-cal__event-time">{ev.event_time}</span>}
+                  <span className="adm-cal__event-title">{ev.title}</span>
+                </button>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      {selected && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setSelected(null)}>
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3>{selected.title}</h3>
+              <button className="modal-close" onClick={() => setSelected(null)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="adm-cell-sub">
+                {format(new Date(selected.event_date), "EEEE d 'de' MMMM, yyyy", { locale: es })}{selected.event_time && ` · ${selected.event_time} hrs`}
+              </div>
+              <div className="adm-event-bookings">🎟️ <strong>{selected.bookings_count ?? 0}</strong> reserva{selected.bookings_count === 1 ? '' : 's'} · {selected.sold_tickets ?? 0}/{selected.total_capacity ?? 0} cupos vendidos</div>
+              <div className="adm-cell-sub" style={{marginTop:'8px'}}>
+                {selected.is_suspended ? 'Suspendido' : selected.is_active ? 'Activo' : 'Inactivo'} · ${Number(selected.price).toLocaleString('es-CL')} CLP
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="adm-btn adm-btn--ghost" onClick={() => { onViewEvent(selected.id); setSelected(null) }}><Eye size={14} /> Ver en Eventos</button>
+              <button className="adm-btn adm-btn--primary" onClick={() => { setEditingEvent(selected); setSelected(null) }}><Pencil size={14} /> Editar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editingEvent && <EventFormModal editing={editingEvent} onClose={() => setEditingEvent(null)} onSaved={load} />}
+      {newDate && <EventFormModal editing={null} initialDate={newDate} onClose={() => setNewDate(null)} onSaved={load} />}
     </div>
   )
 }
@@ -1282,6 +1399,7 @@ function ArchivedTab() {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
+  const [focusEventId, setFocusEventId] = useState(null)
   const { user, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
@@ -1305,7 +1423,8 @@ export default function AdminDashboard() {
       </aside>
       <main className="adm-main">
         {activeTab === 'bookings' && <BookingsTab />}
-        {activeTab === 'events'   && <EventsTab />}
+        {activeTab === 'events'   && <EventsTab focusEventId={focusEventId} onFocusDone={() => setFocusEventId(null)} />}
+        {activeTab === 'calendar' && <CalendarTab onViewEvent={(id) => { setFocusEventId(id); setActiveTab('events') }} />}
         {activeTab === 'vans'     && <VansTab />}
         {activeTab === 'stats'    && <StatsTab />}
         {activeTab === 'refunds'  && <RefundsTab />}
