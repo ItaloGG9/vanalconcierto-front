@@ -69,6 +69,7 @@ export const adminDeleteVan = (id) => api.delete(`/vans/${id}`)
 export const adminAssignVan = (eventId, vanId) => api.post('/vans/assign', null, { params: { event_id: eventId, van_id: vanId } })
 export const adminUnassignVan = (eventId, vanId) => api.delete('/vans/unassign', { params: { event_id: eventId, van_id: vanId } })
 export const adminGetEventVans = (eventId) => api.get(`/vans/event/${eventId}`)
+export const adminGetVansByEvent = () => api.get('/vans/by-event')
 export const getVanEvents = (vanId) => api.get(`/vans/assigned-events/${vanId}`)
 
 // ── Gestión de pasajeros ──────────────────────────────────────

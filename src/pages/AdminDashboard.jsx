@@ -4,7 +4,7 @@ import {
   adminGetBookings, adminConfirmTransfer,
   adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminUploadEventImage,
   adminGetDrivers, adminCreateDriver, adminVerifyDriver, adminDeleteDriver,
-  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents, adminGetEvents, adminGetVanAssignments,
+  adminAssignDriver, adminUnassignDriver, adminGetEventDrivers, getEvents, adminGetEvents, adminGetVanAssignments, adminGetVansByEvent,
   adminGetVans, adminCreateVan, adminDeleteVan,
   adminGetEventVans, adminAssignVan, adminUnassignVan,
   adminGetBookingPassengers, adminResendTickets, adminGetStats,
@@ -79,16 +79,18 @@ function StatusBadge({ status }) {
   return <span className="status-badge" style={{ '--sc': s.color }}>{s.label}</span>
 }
 
-function VanAssignCell({ bookingId, eventId, vans }) {
-  const [passengers, setPassengers] = useState([])
-  const [loading, setLoading] = useState(true)
+function VanAssignCell({ bookingId, eventId, vans, initialPassengers }) {
+  const [passengers, setPassengers] = useState(initialPassengers || [])
+  const [loading, setLoading] = useState(!initialPassengers)
 
   useEffect(() => {
+    // Los pasajeros ya vienen con la reserva: no hace falta pedirlos uno por uno
+    if (initialPassengers) { setPassengers(initialPassengers); setLoading(false); return }
     adminGetBookingPassengers(bookingId)
       .then(r => setPassengers(r.data || []))
       .catch(() => setPassengers([]))
       .finally(() => setLoading(false))
-  }, [bookingId])
+  }, [bookingId, initialPassengers])
 
   const handleReassign = async (passengerId, newVanId) => {
     try {
@@ -339,7 +341,7 @@ function BookingCard({ booking, eventName, onExpand, expanded, onConfirm, onReje
       </div>
       <div style={{marginTop:'8px'}}>
         <div className="adm-booking-card-label" style={{marginBottom:'6px'}}>Asignación de van</div>
-        <VanAssignCell bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} />
+        <VanAssignCell bookingId={booking.id} eventId={booking.event_id} vans={eventVans || []} initialPassengers={booking.passengers} />
       </div>
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button className="adm-btn adm-btn--ghost" onClick={() => onExpand()} style={{ flex: 1 }}>
@@ -430,9 +432,10 @@ function BookingsTab() {
     } catch {}
   }
 
+  // Vans de todos los eventos en una sola petición (antes era una por cada reserva)
   useEffect(() => {
-    bookings.forEach(b => { if (!eventVans[b.event_id]) loadEventVans(b.event_id) })
-  }, [bookings])
+    adminGetVansByEvent().then(r => setEventVans(prev => ({ ...r.data, ...prev }))).catch(() => {})
+  }, [])
 
   const toggleExpand = async (bookingId, eventId) => {
     setExpandedBookings(prev =>
@@ -534,7 +537,7 @@ function BookingsTab() {
                             <div className="adm-cell-sub">{b.customer_email}</div>
                           </td>
                           <td><div className="adm-cell-sub">{getNombreEvento(b.event_id)}</div></td>
-                          <td><VanAssignCell bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} /></td>
+                          <td><VanAssignCell bookingId={b.id} eventId={b.event_id} vans={eventVans[b.event_id] || []} initialPassengers={b.passengers} /></td>
                           <td>{b.quantity}</td>
                           <td>${Number(b.total_price).toLocaleString('es-CL')}</td>
                           <td style={{color:'#22c55e'}}>${paid.toLocaleString('es-CL')}</td>
@@ -773,7 +776,7 @@ function EventsTab({ focusEventId, onFocusDone }) {
     adminGetEvents().then(r => {
       const active = r.data.filter(ev => !ev.is_archived)
       setEvents(active)
-      active.forEach(event => adminGetEventVans(event.id).then(res => setEventVans(prev => ({ ...prev, [event.id]: res.data }))).catch(() => {}))
+      adminGetVansByEvent().then(res => setEventVans(res.data)).catch(() => {})
     }).catch(() => {})
   }
   useEffect(() => {
